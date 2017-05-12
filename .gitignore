@@ -1,1 +1,6 @@
 *.pyc
+*.pem
+event_models/
+*.ipynb
+.idea/
+.ipynb_checkpoints/

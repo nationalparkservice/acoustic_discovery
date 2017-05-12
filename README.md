@@ -8,12 +8,43 @@ For help:
 
 `python nps_acoustic_discovery.py -h`
 
-Acknowledgements
-================
 
-This package makes use of the following projects:
+Dependencies
+============
+
+Keras - https://keras.io/
+
+Pandas - http://pandas.pydata.org/
 
 Python Speech Features - https://github.com/jameslyons/python_speech_features
-? mpg321 - http://mpg321.sourceforge.net/
+
+h5py - http://www.h5py.org/
+
+
+Installation
+============
+
+```
+pip install keras
+pip install pandas
+pip install python_speech_features
+pip install h5py
+```
+
+
+Troubleshooting
+---------------
+
+
+-`ImportError: No module named 'tensorflow'`
+
+Installing Keras with Pip creates a configuration file in your home directory ~/.keras/keras.json with
+the compute backend as Tensorflow. You may need to change this to Theano: `"backend": "theano"`
+
+
+
+
+
+
 
 
