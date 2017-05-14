@@ -54,6 +54,7 @@ class EventModel(object):
         """
         Get the probability of this event for the feature vector.
         """
-        feature_vector_sc = (feature_vector - self.scaler_mean) / self.scaler_var
-        return self.keras_model.predict(feature_vector_sc, batch_size=1, verbose=0)
+        feature_vector -= self.scaler_mean
+        feature_vector /= np.sqrt(self.scaler_var)
+        return self.keras_model.predict_proba(feature_vector, verbose=0)
 

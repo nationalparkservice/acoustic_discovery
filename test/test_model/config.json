@@ -1,0 +1,18 @@
+{
+    "model_id": "13318244",
+    "codes": [
+        "AMRO"
+    ],
+    "feature_config": {
+        "window_size_sec": 1.5,
+        "nfft": 1024,
+        "axis_dim": 1,
+        "num_cepstral_coeffs": 14,
+        "hop_size": 0.1,
+        "feature_dim": 42,
+        "num_filters": 512,
+        "high_freq": 12000.0,
+        "low_freq": 100.0
+    },
+    "event_type": "Avian Call"
+}

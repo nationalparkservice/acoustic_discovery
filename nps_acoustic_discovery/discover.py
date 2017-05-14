@@ -1,12 +1,11 @@
 __author__ = 'Cameron Summers'
 
 """
-This is the command line utility for running audio event detection for the National Park Service.
+Command line utility for running audio event detection for the National Park Service.
 """
 
 import logging
 from collections import defaultdict
-import pdb
 
 import argparse
 
@@ -55,9 +54,8 @@ class AcousticDetector(object):
             audio_data (ndarray): audio signal
             sample_rate (float): audio sample rate
 
-        Yields:
-            float: the time in the audio for the feature vector
-            ndarray: the feature vector
+        Returns:
+            ndarray: features of feature windows
         """
 
         logging.debug('Processing features...')
@@ -65,14 +63,17 @@ class AcousticDetector(object):
         logging.debug('Input vector shape: {}'.format(X.shape))
         window_size_frames = int(self.fconfig['window_size_sec'] / self.fconfig['hop_size'])  # sec / (sec / frame) -> frame
 
+        windows = []
         for i in range(X.shape[0]):
             start_frame = i
             end_frame = i + window_size_frames
             window_mean = np.mean(X[start_frame:end_frame, :], axis=0)
             window_std = np.std(X[start_frame:end_frame, :], axis=0)
-            time_secs = i * self.fconfig['hop_size']
             feature_vector = np.hstack((window_mean, window_std))
-            yield time_secs, feature_vector[np.newaxis, :]
+            windows.append(feature_vector)
+
+        X_win = np.vstack(tuple(windows))
+        return X_win
 
     def process(self, audio_filepath):
         """
@@ -84,8 +85,6 @@ class AcousticDetector(object):
         Returns:
             dict: model obj to detection probabilities
         """
-        #TODO Handle mp3 file inputs and decode
-
         try:
             (sample_rate, sig) = wav.read(audio_filepath)
         except Exception as e:
@@ -93,10 +92,12 @@ class AcousticDetector(object):
             raise e
 
         model_probabilities = defaultdict(list)
-        for time_stamp, fvec in self.iter_feature_vector(sig, sample_rate):
-            for model_id, model in self.models.items():
-                prob = model.process(fvec)
-                model_probabilities[model].append(prob)
+        # for time_stamp, fvec in self.iter_feature_vector(sig, sample_rate):
+        X_win = self.iter_feature_vector(sig, sample_rate)
+        for model_id, model in self.models.items():
+            feat = np.copy(X_win)
+            prob = model.process(feat)
+            model_probabilities[model].append(prob)
 
         for model, probs in model_probabilities.items():
             probs = np.concatenate(tuple(probs), axis=0)
@@ -134,6 +135,6 @@ if __name__ == "__main__":
     logging.debug('Saving output...')
 
     if args.output == 'probs':
-        probs_to_pandas(probabilities, args.save_dir)
+        probs_to_pandas(probabilities, args.save_dir, args.audio_path)
     elif args.output == 'detections':
         probs_to_raven_detections(probabilities, args.threshold)
