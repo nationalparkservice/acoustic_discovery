@@ -162,5 +162,6 @@ if __name__ == "__main__":
                     raven_df[header].to_csv(
                         os.path.join(save_dir, '{}_{}_selection_table.txt'.format(model.model_id, os.path.basename(audio_name))),
                         sep='\t',
-                        # float_format='{:.2f}',
+                        float_format='%.2f',
+                        index=False
                     )
