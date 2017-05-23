@@ -48,13 +48,13 @@ class EventModel(object):
         self.model_id = event_config['model_id']
         self.keras_model = keras_model
         self.scaler_mean = scaler_mean
-        self.scaler_var = scaler_var
+        self.scaler_std = np.sqrt(scaler_var)
 
     def process(self, feature_vector):
         """
         Get the probability of this event for the feature vector.
         """
         feature_vector -= self.scaler_mean
-        feature_vector /= np.sqrt(self.scaler_var)
+        feature_vector /= self.scaler_std
         return self.keras_model.predict_proba(feature_vector, verbose=0)
 

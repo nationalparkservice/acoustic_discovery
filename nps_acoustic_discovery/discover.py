@@ -6,6 +6,7 @@ Command line utility for running audio event detection for the National Park Ser
 
 import logging
 from collections import defaultdict
+import os
 
 import argparse
 
@@ -61,7 +62,8 @@ class AcousticDetector(object):
         logging.debug('Processing features...')
         X = self.fextractor.process(audio_data, sample_rate)
         logging.debug('Input vector shape: {}'.format(X.shape))
-        window_size_frames = int(self.fconfig['window_size_sec'] / self.fconfig['hop_size'])  # sec / (sec / frame) -> frame
+        window_size_frames = int(
+            self.fconfig['window_size_sec'] / self.fconfig['hop_size'])  # sec / (sec / frame) -> frame
 
         windows = []
         for i in range(X.shape[0]):
@@ -128,13 +130,37 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    detector = AcousticDetector(args.model_dir_path)
+    threshold = args.threshold
+    model_dir_path = args.model_dir_path
+    audio_path = args.audio_path
+    save_dir = args.save_dir
+    output_type = args.output
 
-    probabilities = detector.process(args.audio_path)
+    detector = AcousticDetector(model_dir_path)
+
+    model_prob_map = detector.process(audio_path)
+    model_prob_df_map = probs_to_pandas(model_prob_map)
 
     logging.debug('Saving output...')
 
-    if args.output == 'probs':
-        probs_to_pandas(probabilities, args.save_dir, args.audio_path)
-    elif args.output == 'detections':
-        probs_to_raven_detections(probabilities, args.threshold)
+    audio_filename = os.path.basename(audio_path)
+    audio_name = os.path.splitext(audio_filename)[0]
+    if output_type == 'probs':
+        for model, df in model_prob_df_map.items():
+            df.to_pickle(os.path.join(save_dir, '{}_{}_probs_df.pk'.format(model.model_id,
+                                                                                os.path.basename(audio_name))))
+    elif output_type == 'detections':
+        model_raven_df_map = probs_to_raven_detections(model_prob_df_map, threshold)
+        for model, raven_df_list in model_raven_df_map.items():
+            for event_code, raven_df in raven_df_list.items():
+                if len(raven_df) == 0:
+                    logging.info('No detections at threshold {} for model id {} on code {}'.format(threshold,
+                                                                                                   model.model_id,
+                                                                                                   event_code))
+                else:
+                    header = ['Selection', 'Begin Time (s)', 'End Time (s)', 'Species']
+                    raven_df[header].to_csv(
+                        os.path.join(save_dir, '{}_{}_selection_table.txt'.format(model.model_id, os.path.basename(audio_name))),
+                        sep='\t',
+                        # float_format='{:.2f}',
+                    )

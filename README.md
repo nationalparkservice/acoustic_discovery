@@ -8,7 +8,7 @@ Example Usage:
 
 `python discovery.py <path_to_audio> <path_to_save_dir> --model_dir_path <model_dir1> <model_dir2>`
 
-This will output two files of detections for each of the models.
+This will output two files of detections, one for each of the models.
 
 
 For help:

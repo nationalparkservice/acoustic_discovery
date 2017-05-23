@@ -5,30 +5,95 @@ Utility functions
 """
 
 import os
+import datetime
+import copy
 
 import numpy as np
 import pandas as pd
+from scipy.signal import butter, lfilter
 
 
-def probs_to_pandas(model_probabilities, save_dir, audio_path):
+def probs_to_pandas(model_prob_map, start_datetime=None):
     """
     Output probabilities for models to pandas df.
 
     Args:
         model_probabilities (dict): model to detection probabilities
-        save_dir (str): where to save the dataframe
+        start_datetime (datetime.datetime): absolute start time of audio
     """
-    audio_filename = os.path.basename(audio_path)
-    audio_name = os.path.splitext(audio_filename)[0]
-    for model, probs in model_probabilities.items():
-        time = [float(t) * model.fconfig['hop_size'] for i, t in enumerate(range(len(probs)))]
-        df = pd.DataFrame(np.column_stack([time, probs]), columns=["Time (s)"] + model.event_codes)
-        print(model.model_id)
-        df.to_pickle(os.path.join(save_dir, 'mid{}_{}_probs_df.pk'.format(model.model_id, os.path.basename(audio_name))))
+    model_prob_df_map = dict()
+    for model, probs in model_prob_map.items():
+        # Time relative to the file start
+        rel_time = [float(t) * model.fconfig['hop_size'] for i, t in enumerate(range(len(probs)))]
+        df = pd.DataFrame(np.column_stack([rel_time, probs]), columns=["Relative Time (s)"] + model.event_codes)
+
+        # Create new column with absolute time if a start is provided
+        if start_datetime is not None:
+            abs_time = [start_datetime + datetime.timedelta(0, t) for t in rel_time]
+            df['Absolute Time'] = pd.Series(abs_time)
+
+        model_prob_df_map[model] = df
+
+    return model_prob_df_map
 
 
-def probs_to_raven_detections(model_probabilities, threshold):
+def probs_to_raven_detections(model_prob_df_map, threshold):
     """
     Output probabilities for models to pandas df.
+
+    Args:
+        model_prob_df_map (dict): maps the model object to the probabilities dataframe
+        threshold (float): the threshold for determining a detection
+
+    Returns:
+        dict: Map of model object to list of dataframes for each event code supported by the model
+              that can be written as selection table files
     """
-    raise NotImplementedError()
+    model_raven_df_map = dict()
+    for model, prob_df in model_prob_df_map.items():
+        detection_window_size = model.fconfig['window_size_sec']
+        code_raven_df_map = dict()
+        for event_code in model.event_codes:
+            filtered_signal = lowpass_filter(prob_df[event_code])
+
+            # Vectorized location of detection start times
+            binarized_signal = copy.copy(filtered_signal)
+            binarized_signal[filtered_signal < threshold] = 0
+            binarized_signal[filtered_signal > threshold] = 1
+            rise_indices = np.where(np.diff(binarized_signal, axis=0) == 1)[0]
+
+            # Compile detection start times into dataframe compatible with Raven
+            detections = []
+            detection_ctr = 0
+            prev_rise_time = None
+            for idx in rise_indices:
+                rise_time = prob_df.iloc[idx]['Relative Time (s)']
+
+                # Skip a rise if it's within the window
+                if prev_rise_time is not None and (rise_time - prev_rise_time) < detection_window_size:
+                    continue
+
+                detections.append({
+                    'Selection': detection_ctr,
+                    'Begin Time (s)': rise_time,
+                    'End Time (s)': rise_time + detection_window_size,
+                    'Species': event_code,
+                })
+
+                detection_ctr += 1
+                prev_rise_time = rise_time
+
+            detections_df = pd.DataFrame(detections)
+            code_raven_df_map[event_code] = detections_df
+
+        model_raven_df_map[model] = code_raven_df_map
+
+    return model_raven_df_map
+
+
+def lowpass_filter(signal):
+    """
+    Apply a lowpass filter to the probabilities.
+    """
+    b, a = butter(5, 0.1, analog=False)
+    return lfilter(b, a, signal)
