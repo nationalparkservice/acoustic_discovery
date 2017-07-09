@@ -64,7 +64,7 @@ def probs_to_raven_detections(model_prob_df_map, threshold):
 
             # Compile detection start times into dataframe compatible with Raven
             detections = []
-            detection_ctr = 0
+            detection_ctr = 1
             prev_rise_time = None
             for idx in rise_indices:
                 rise_time = prob_df.iloc[idx]['Relative Time (s)']

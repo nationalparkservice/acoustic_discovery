@@ -116,7 +116,7 @@ if __name__ == "__main__":
     parser.add_argument('save_dir',
                         help='Directory in which to save the output.')
     parser.add_argument('--model_dir_path',
-                        nargs='+',
+                        action='append',
                         required=True,
                         help='Path to model(s) directories for classification')
     parser.add_argument('--threshold',
@@ -131,12 +131,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     threshold = args.threshold
-    model_dir_path = args.model_dir_path
+    model_dir_paths = args.model_dir_path
     audio_path = args.audio_path
     save_dir = args.save_dir
     output_type = args.output
 
-    detector = AcousticDetector(model_dir_path)
+    detector = AcousticDetector(model_dir_paths)
 
     model_prob_map = detector.process(audio_path)
     model_prob_df_map = probs_to_pandas(model_prob_map)
@@ -162,6 +162,6 @@ if __name__ == "__main__":
                     raven_df[header].to_csv(
                         os.path.join(save_dir, '{}_{}_selection_table.txt'.format(model.model_id, os.path.basename(audio_name))),
                         sep='\t',
-                        float_format='%.2f',
+                        float_format='%.1f',
                         index=False
                     )
