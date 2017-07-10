@@ -17,7 +17,7 @@ class TestSmoke(unittest.TestCase):
     def setUp(self):
         self.test_model_dir = os.path.join(THIS_DIR, 'test_model')
         self.test_input = np.ones((1, 84))
-        self.test_audio_filepath = os.path.join(THIS_DIR, 'test.wav')
+        self.test_audio_filepath = os.path.join(THIS_DIR, 'test30s.wav')
 
     def test1_model(self):
         model = EventModel(self.test_model_dir)
