@@ -6,14 +6,19 @@ National Park Service.
 
 Example Usage:
 
-`python discovery.py <path_to_audio> <path_to_save_dir> --model_dir_path <model_dir1> <model_dir2>`
+`python -m nps_acoustic_discovery.discover <path_to_audio> <path_to_save_dir> --m <model_dir1> -m <model_dir2> -t <threshold1> -t <threshold2>`
 
 This will output two files of detections, one for each of the models.
 
 
 For help:
 
-`python discovery.py -h`
+`python -m nps_acoustic_discovery.discover -h`
+
+
+Run tests:
+
+`nosetests --nocapture test/test_model.py`
 
 
 Dependencies
