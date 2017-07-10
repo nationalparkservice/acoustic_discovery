@@ -43,12 +43,14 @@ class EventModel(object):
             raise e
 
         self.event_type = event_config['event_type']
-        self.event_codes = event_config['codes']
+        self.event_code = event_config['code']
         self.fconfig = event_config['feature_config']
         self.model_id = event_config['model_id']
         self.keras_model = keras_model
         self.scaler_mean = scaler_mean
         self.scaler_std = np.sqrt(scaler_var)
+        self.model_path = model_path
+        self.detection_threshold = None
 
     def process(self, feature_vector):
         """
@@ -57,4 +59,10 @@ class EventModel(object):
         feature_vector -= self.scaler_mean
         feature_vector /= self.scaler_std
         return self.keras_model.predict_proba(feature_vector, verbose=0)
+
+    def set_threshold(self, threshold):
+        """
+        Set the threshold if model is used for  for detections.
+        """
+        self.detection_threshold = threshold
 

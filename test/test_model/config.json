@@ -1,8 +1,6 @@
 {
     "model_id": "13318244",
-    "codes": [
-        "AMRO"
-    ],
+    "code": "AMRO",
     "feature_config": {
         "window_size_sec": 1.5,
         "nfft": 1024,
