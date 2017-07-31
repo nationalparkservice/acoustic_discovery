@@ -7,10 +7,11 @@ Command line utility for running audio event detection for the National Park Ser
 import logging
 from collections import defaultdict
 import os
+import subprocess
+import struct
 
 import argparse
 
-import scipy.io.wavfile as wav
 import numpy as np
 
 from nps_acoustic_discovery.output import probs_to_pandas, probs_to_raven_detections
@@ -25,7 +26,7 @@ class AcousticDetector(object):
     A class for handling detections with various models.
     """
 
-    def __init__(self, model_paths, thresholds):
+    def __init__(self, model_paths, thresholds, decoder_path=None):
         """
         Args:
             model_paths (list): Which models to use for detection
@@ -35,6 +36,7 @@ class AcousticDetector(object):
             raise Exception('Expected same number of models and thresholds. '
                             'Instead got {} models and {} thresholds'.format(len(model_paths), len(thresholds)))
 
+        self.ffmpeg_path = decoder_path
         self.models = dict()
 
         last_feature_config = None
@@ -53,7 +55,7 @@ class AcousticDetector(object):
             self.fconfig = last_feature_config
         self.fextractor = FeatureExtractor(last_feature_config)
 
-    def iter_feature_vector(self, audio_data, sample_rate):
+    def get_feature_vector(self, audio_data, sample_rate):
         """
         Provide a feature vector for the models to process.
 
@@ -64,7 +66,6 @@ class AcousticDetector(object):
         Returns:
             ndarray: features of feature windows
         """
-
         logging.debug('Processing features...')
         X = self.fextractor.process(audio_data, sample_rate)
         logging.debug('Input vector shape: {}'.format(X.shape))
@@ -83,6 +84,53 @@ class AcousticDetector(object):
         X_win = np.vstack(tuple(windows))
         return X_win
 
+    def iter_audio(self, audio_filepath, chunk_size=None):
+        """
+        Read an input audio file for processing. Reads chunks in a stream because soundscape recordings
+        can be quite large.
+        """
+        try:
+
+            MODEL_SAMPLE_RATE = 44100
+
+            if chunk_size is None:
+                chunk_size = int(MODEL_SAMPLE_RATE * 60 * 4)  # 1 min audio
+
+            # FFMPEG command to modify input audio to look like training audio.
+            # Audio used for training is 16 bit-depth, 44.1k sample rate, and single channel.
+            decode_command = [
+                self.ffmpeg_path,
+                '-i',
+                audio_filepath,
+                '-f',
+                's16le',  # raw signed 16-bit little endian
+                '-ac',
+                '1',  # force to mono if necessary
+                '-ar',
+                str(MODEL_SAMPLE_RATE),  # resample if necessary
+                'pipe:1',
+            ]
+            proc = subprocess.Popen(decode_command, stdout=subprocess.PIPE)
+
+            chunk_idx = 1
+            for raw_data in iter(lambda: proc.stdout.read(chunk_size), ''):
+
+                num_samples = len(raw_data) / 2  # 2 shorts per sample
+                format_str = '%ih' % num_samples
+                int_data = struct.unpack(format_str, raw_data)
+                signal = np.array(int_data)
+
+                if len(signal) > 0:
+                    logging.debug('Processing chunk: {}. Audio len (s): {}'.format(chunk_idx,
+                                                                                   len(signal) / float(MODEL_SAMPLE_RATE)))
+
+                yield signal, MODEL_SAMPLE_RATE
+                chunk_idx += 1
+
+        except Exception as e:
+            logging.error('Could not read audio file: {}'.format(audio_filepath))
+            raise e
+
     def process(self, audio_filepath):
         """
         Get raw probabilities of events for the audio data.
@@ -93,25 +141,25 @@ class AcousticDetector(object):
         Returns:
             dict: model obj to detection probabilities
         """
-        try:
-            (sample_rate, sig) = wav.read(audio_filepath)
-        except Exception as e:
-            logging.error('Could not read wav file: {}'.format(audio_filepath))
-            raise e
+        model_probs_map = defaultdict(list)
 
-        model_probabilities = defaultdict(list)
-        # for time_stamp, fvec in self.iter_feature_vector(sig, sample_rate):
-        X_win = self.iter_feature_vector(sig, sample_rate)
-        for model_id, model in self.models.items():
-            feat = np.copy(X_win)
-            prob = model.process(feat)
-            model_probabilities[model].append(prob)
+        for sig, sample_rate in self.iter_audio(audio_filepath):
 
-        for model, probs in model_probabilities.items():
-            probs = np.concatenate(tuple(probs), axis=0)
-            model_probabilities[model] = probs
+            # Finished reading file
+            if len(sig) == 0:
+                break
 
-        return model_probabilities
+            X_win = self.get_feature_vector(sig, sample_rate)
+            for model_id, model in self.models.items():
+                feat = np.copy(X_win)
+                prob = model.process(feat)
+                model_probs_map[model].append(prob)
+
+            for model, probs in model_probs_map.items():
+                probs = np.concatenate(tuple(probs), axis=0)
+                model_probs_map[model] = probs
+
+        return model_probs_map
 
 
 if __name__ == "__main__":
@@ -154,9 +202,10 @@ if __name__ == "__main__":
     audio_name = os.path.splitext(audio_filename)[0]
     if output_type == 'probs':
         for model, df in model_prob_df_map.items():
-            df.to_csv(os.path.join(save_dir, '{}_{}_{}_probs_df.tsv'.format(model.event_code,
+            df.to_csv(os.path.join(save_dir, '{}_{}_{}_probs_df.tsv'.format(os.path.basename(audio_name),
+                                                                            model.event_code,
                                                                             model.model_id,
-                                                                           os.path.basename(audio_name))),
+                                                                            )),
                       sep='\t',
                       float_format='%0.4f',
                       index=False
@@ -172,9 +221,9 @@ if __name__ == "__main__":
             else:
                 header = ['Selection', 'Begin Time (s)', 'End Time (s)', 'Species']
                 raven_df[header].to_csv(
-                    os.path.join(save_dir, '{}_{}_{}_th{}_selection_table.txt'.format(model.event_code,
+                    os.path.join(save_dir, '{}_{}_{}_th{}_selection_table.txt'.format(os.path.basename(audio_name),
+                                                                                      model.event_code,
                                                                                       model.model_id,
-                                                                                      os.path.basename(audio_name),
                                                                                       model.detection_threshold)),
                     sep='\t',
                     float_format='%.1f',
