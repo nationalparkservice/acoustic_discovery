@@ -26,7 +26,7 @@ class AcousticDetector(object):
     A class for handling detections with various models.
     """
 
-    def __init__(self, model_paths, thresholds, decoder_path=None):
+    def __init__(self, model_paths, thresholds, ffmpeg_path=None):
         """
         Args:
             model_paths (list): Which models to use for detection
@@ -36,7 +36,7 @@ class AcousticDetector(object):
             raise Exception('Expected same number of models and thresholds. '
                             'Instead got {} models and {} thresholds'.format(len(model_paths), len(thresholds)))
 
-        self.ffmpeg_path = decoder_path
+        self.ffmpeg_path = ffmpeg_path
         self.models = dict()
 
         last_feature_config = None
@@ -94,7 +94,7 @@ class AcousticDetector(object):
             MODEL_SAMPLE_RATE = 44100
 
             if chunk_size is None:
-                chunk_size = int(MODEL_SAMPLE_RATE * 60 * 4)  # 1 min audio
+                chunk_size = int(MODEL_SAMPLE_RATE * 60 * 2 * 10)  # 10 min audio
 
             # FFMPEG command to modify input audio to look like training audio.
             # Audio used for training is 16 bit-depth, 44.1k sample rate, and single channel.
@@ -155,9 +155,9 @@ class AcousticDetector(object):
                 prob = model.process(feat)
                 model_probs_map[model].append(prob)
 
-            for model, probs in model_probs_map.items():
-                probs = np.concatenate(tuple(probs), axis=0)
-                model_probs_map[model] = probs
+        for model, probs in model_probs_map.items():
+            probs = np.concatenate(tuple(probs), axis=0)
+            model_probs_map[model] = probs
 
         return model_probs_map
 
@@ -183,6 +183,9 @@ if __name__ == "__main__":
                         default='probs',
                         help='Type of output, probabilities or detections at a threshold')
 
+    parser.add_argument('--ffmpeg',
+                        help='Path to FFMPEG executable')
+
     args = parser.parse_args()
 
     thresholds = args.threshold
@@ -190,8 +193,9 @@ if __name__ == "__main__":
     audio_path = args.audio_path
     save_dir = args.save_dir
     output_type = args.output
+    ffmpeg_path = args.ffmpeg
 
-    detector = AcousticDetector(model_dir_paths, thresholds)
+    detector = AcousticDetector(model_dir_paths, thresholds, ffmpeg_path=ffmpeg_path)
 
     model_prob_map = detector.process(audio_path)
     model_prob_df_map = probs_to_pandas(model_prob_map)
