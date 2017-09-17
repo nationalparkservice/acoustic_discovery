@@ -103,11 +103,11 @@ class AcousticDetector(object):
                 '-i',
                 audio_filepath,
                 '-f',
-                's16le',  # raw signed 16-bit little endian
+                's16le', # raw signed 16-bit little endian
                 '-ac',
-                '1',  # force to mono if necessary
+                '1', # force to mono if necessary
                 '-ar',
-                str(MODEL_SAMPLE_RATE),  # resample if necessary
+                str(MODEL_SAMPLE_RATE), # resample if necessary
                 'pipe:1',
             ]
             proc = subprocess.Popen(decode_command, stdout=subprocess.PIPE)
@@ -122,7 +122,8 @@ class AcousticDetector(object):
 
                 if len(signal) > 0:
                     logging.debug('Processing chunk: {}. Audio len (s): {}'.format(chunk_idx,
-                                                                                   len(signal) / float(MODEL_SAMPLE_RATE)))
+                                                                                   len(signal) / float(
+                                                                                       MODEL_SAMPLE_RATE)))
 
                 yield signal, MODEL_SAMPLE_RATE
                 chunk_idx += 1
@@ -167,23 +168,28 @@ if __name__ == "__main__":
 
     parser.add_argument('audio_path',
                         help='Path to audio file on which to run the classifier')
+
     parser.add_argument('save_dir',
                         help='Directory in which to save the output.')
+
     parser.add_argument('-m', '--model_dir_path',
                         action='append',
                         required=True,
                         help='Path to model(s) directories for classification')
+
     parser.add_argument('-t', '--threshold',
                         type=float,
                         action='append',
                         required=True,
                         help='If outputing detections, the threshold for a positive detection')
+
     parser.add_argument('-o', '--output',
-                        choices=['probs', 'detections'],
+                        choices=['probs', 'detections', 'audio'],
                         default='probs',
                         help='Type of output, probabilities or detections at a threshold')
 
     parser.add_argument('--ffmpeg',
+                        required=True,
                         help='Path to FFMPEG executable')
 
     args = parser.parse_args()
@@ -204,17 +210,21 @@ if __name__ == "__main__":
 
     audio_filename = os.path.basename(audio_path)
     audio_name = os.path.splitext(audio_filename)[0]
+    audio_ext = os.path.splitext(audio_filename)[-1]
+
     if output_type == 'probs':
+
         for model, df in model_prob_df_map.items():
             df.to_csv(os.path.join(save_dir, '{}_{}_{}_probs_df.tsv'.format(os.path.basename(audio_name),
                                                                             model.event_code,
                                                                             model.model_id,
-                                                                            )),
+            )),
                       sep='\t',
                       float_format='%0.4f',
                       index=False
-                      )
+            )
     elif output_type == 'detections':
+
         model_raven_df_map = probs_to_raven_detections(model_prob_df_map)
         for model, raven_df in model_raven_df_map.items():
             if len(raven_df) == 0:
@@ -233,3 +243,36 @@ if __name__ == "__main__":
                     float_format='%.1f',
                     index=False
                 )
+    elif output_type == 'audio':
+
+        model_raven_df_map = probs_to_raven_detections(model_prob_df_map)
+
+        for model, raven_df in model_raven_df_map.items():
+            create_audio = input(
+                'About to create {} audio files for {} detections. Are you sure? (y/N)'.format(len(raven_df),
+                                                                                               model.event_code))
+
+            if create_audio not in ['y', 'Y']:
+                logging.info('Process aborted by user.')
+                continue
+
+            for idx, row in raven_df.iterrows():
+                start_time = row['Begin Time (s)']
+                end_time = start_time + model.fconfig['window_size_sec']
+
+                out_filename = '{}_{}_s{:.1f}_e{:.1f}_m{}{}'.format(os.path.basename(audio_name),
+                                                            model.event_code,
+                                                            start_time,
+                                                            end_time,
+                                                            model.model_id,
+                                                            audio_ext
+                )
+
+                outpath = os.path.join(save_dir, out_filename)
+
+                # Save the detection's slice of audio
+                ffmpeg_slice_cmd = [ffmpeg_path, '-i', audio_path,
+                                    '-ss', str(start_time), '-t', str(model.fconfig['window_size_sec']),
+                                    '-acodec', 'copy', outpath]
+                subprocess.Popen(ffmpeg_slice_cmd)
+
