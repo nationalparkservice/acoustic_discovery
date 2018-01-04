@@ -13,6 +13,16 @@ class FeatureExtractor(object):
         self.fconfig = feature_config
 
     def process(self, audio_data, sample_rate):
+        """
+        Process the audio and return features.
+
+        Args:
+            audio_data (ndarray): incoming audio data
+            sample_rate (int): audio sample rate
+
+        Returns:
+            ndarray: feature matrix (time x features)
+        """
         mfcc_feat = mfcc(audio_data, sample_rate,
                          winstep=self.fconfig['hop_size'],
                          numcep=self.fconfig['num_cepstral_coeffs'],

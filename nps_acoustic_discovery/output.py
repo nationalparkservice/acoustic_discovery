@@ -15,10 +15,13 @@ from scipy.signal import butter, lfilter
 
 def probs_to_pandas(model_prob_map, start_datetime=None):
     """
-    Output probabilities for models to pandas df.
+    Output probabilities for models to pandas df. Optionally, can give this
+    function a datetime that represents the true start of the detections. This
+    is useful when you are processing multiple files in sequence and want
+    to maintain their time relations.
 
     Args:
-        model_probabilities (dict): model to detection probabilities
+        model_prob_map (dict): model object to detection probabilities
         start_datetime (datetime.datetime): absolute start time of audio
     """
     model_prob_df_map = dict()
@@ -37,28 +40,29 @@ def probs_to_pandas(model_prob_map, start_datetime=None):
     return model_prob_df_map
 
 
-def probs_to_raven_detections(model_prob_df_map):
+def probs_to_raven_detections(model_prob_df_map, filter_probs=True):
     """
-    Output probabilities for models to pandas df.
+    Get detections at the model threshold and format to be Raven friendly.
 
     Args:
         model_prob_df_map (dict): maps the model object to the probabilities dataframe
-        threshold (float): the threshold for determining a detection
+        filter_probs (bool): whether to apply a low pass smoothing filter to probabilities before generating detections
 
     Returns:
-        dict: Map of model object to dataframe for the event code supported by the model
-              that can be written as selection table files
+        dict: Map of model object to dataframe that can be written as selection table files
     """
     model_raven_df_map = dict()
     for model, prob_df in model_prob_df_map.items():
         detection_window_size = model.fconfig['window_size_sec']
 
-        filtered_signal = lowpass_filter(prob_df[model.event_code])
+        signal = prob_df[model.event_code]
+        if filter_probs:
+            signal = lowpass_filter(prob_df[model.event_code])
 
         # Vectorized location of detection start times
-        binarized_signal = copy.copy(filtered_signal)
-        binarized_signal[filtered_signal < model.detection_threshold] = 0
-        binarized_signal[filtered_signal > model.detection_threshold] = 1
+        binarized_signal = copy.copy(signal)
+        binarized_signal[signal < model.detection_threshold] = 0
+        binarized_signal[signal > model.detection_threshold] = 1
         rise_indices = np.where(np.diff(binarized_signal, axis=0) == 1)[0]
 
         # Compile detection start times into dataframe compatible with Raven

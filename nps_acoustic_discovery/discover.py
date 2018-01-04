@@ -20,6 +20,9 @@ from nps_acoustic_discovery.model import EventModel
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
+# Training audio used 44100Hz sample rate
+MODEL_SAMPLE_RATE = 44100
+
 
 class AcousticDetector(object):
     """
@@ -31,6 +34,7 @@ class AcousticDetector(object):
         Args:
             model_paths (list): Which models to use for detection
             thresholds (list): Thresholds for the models, expected to match order
+            ffmpeg_path (str): Path to ffmpeg executable
         """
         if len(thresholds) != len(model_paths):
             raise Exception('Expected same number of models and thresholds. '
@@ -39,6 +43,7 @@ class AcousticDetector(object):
         self.ffmpeg_path = ffmpeg_path
         self.models = dict()
 
+        # Initialize the models
         last_feature_config = None
         for i, model_path in enumerate(model_paths):
             model = EventModel(model_path)
@@ -88,10 +93,12 @@ class AcousticDetector(object):
         """
         Read an input audio file for processing. Reads chunks in a stream because soundscape recordings
         can be quite large.
+
+        Args:
+            audio_filepath (str): path to the audio file
+            chunk_size (int): size in bytes of chunk to process
         """
         try:
-
-            MODEL_SAMPLE_RATE = 44100
 
             if chunk_size is None:
                 chunk_size = int(MODEL_SAMPLE_RATE * 60 * 2 * 10)  # 10 min audio
@@ -107,7 +114,7 @@ class AcousticDetector(object):
                 '-ac',
                 '1', # force to mono if necessary
                 '-ar',
-                str(MODEL_SAMPLE_RATE), # resample if necessary
+                str(MODEL_SAMPLE_RATE),  # resample if necessary
                 'pipe:1',
             ]
             proc = subprocess.Popen(decode_command, stdout=subprocess.PIPE)
@@ -164,7 +171,8 @@ class AcousticDetector(object):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser('Audio event detection for the National Park Service')
+    parser = argparse.ArgumentParser('Audio event detection for the National Park Service',
+                                     formatter_class=argparse.RawTextHelpFormatter)
 
     parser.add_argument('audio_path',
                         help='Path to audio file on which to run the classifier')
@@ -181,12 +189,18 @@ if __name__ == "__main__":
                         type=float,
                         action='append',
                         required=True,
-                        help='If outputing detections, the threshold for a positive detection')
+                        help='The threshold for a positive detection')
 
+    output_help_text = """
+    Type of output file:
+         probs: Raw probabilities over time
+         detections: Raven detections file
+         audio: Audio slices for each detection
+    """
     parser.add_argument('-o', '--output',
                         choices=['probs', 'detections', 'audio'],
                         default='probs',
-                        help='Type of output, probabilities or detections at a threshold')
+                        help=output_help_text)
 
     parser.add_argument('--ffmpeg',
                         required=True,
@@ -213,6 +227,7 @@ if __name__ == "__main__":
     audio_ext = os.path.splitext(audio_filename)[-1]
 
     if output_type == 'probs':
+        # Save raw probabilities to tsv file
 
         for model, df in model_prob_df_map.items():
             df.to_csv(os.path.join(save_dir, '{}_{}_{}_probs_df.tsv'.format(os.path.basename(audio_name),
@@ -224,6 +239,7 @@ if __name__ == "__main__":
                       index=False
             )
     elif output_type == 'detections':
+        # Save detections at given threshold to Raven file
 
         model_raven_df_map = probs_to_raven_detections(model_prob_df_map)
         for model, raven_df in model_raven_df_map.items():
@@ -244,6 +260,7 @@ if __name__ == "__main__":
                     index=False
                 )
     elif output_type == 'audio':
+        # Save detections at given threshold as individual corresponding audio files
 
         model_raven_df_map = probs_to_raven_detections(model_prob_df_map)
 

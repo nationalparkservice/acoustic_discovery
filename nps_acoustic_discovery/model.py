@@ -14,7 +14,10 @@ class EventModel(object):
     """
 
     def __init__(self, model_path):
-
+        """
+        Args:
+            model_path (str): path to model directory
+        """
         try:
             event_config = json.load(open(os.path.join(model_path, 'config.json')))
         except Exception as e:
@@ -55,6 +58,9 @@ class EventModel(object):
     def process(self, feature_vector):
         """
         Get the probability of this event for the feature vector.
+
+        Args:
+            feature_vector (ndarray): feature matrix (time x features)
         """
         feature_vector -= self.scaler_mean
         feature_vector /= self.scaler_std
@@ -62,7 +68,13 @@ class EventModel(object):
 
     def set_threshold(self, threshold):
         """
-        Set the threshold if model is used for  for detections.
+        Set the threshold if model is used for detections.
+
+        Args:
+            threshold (float): threshold for a detection
         """
+        if not 0.0 <= threshold <= 1.0:
+            raise Exception('Threshold {} must be between 0.0 and 1.0')
+
         self.detection_threshold = threshold
 
