@@ -1,7 +1,7 @@
 # Avian Acoustic Discovery: Alaska
 
-This library was created to automatically detect avian songs in audio. It was commissioned by the
-National Park Service to assist with biological research. 
+This library was created to automatically detect avian songs in audio. 
+It was commissioned by the National Park Service to assist with biological research. 
 
 
 ## Table of Contents
