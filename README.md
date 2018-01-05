@@ -1,7 +1,7 @@
-# United States National Park Service Acoustic Discovery
+# Avian Acoustic Discovery: Alaska
 
-This project has been created for automatic detection of acoustic events in audio and was commissioned by the
-National Park Service. 
+This library was created to automatically detect avian songs in audio. It was commissioned by the
+National Park Service to assist with biological research. 
 
 
 ## Table of Contents
@@ -21,13 +21,9 @@ National Park Service.
 
 ### Background
 
-Researchers in Denali National Park (DNP) in Alaska have collected extensive audio recordings throughout the park
-in an initiative to protect and study the natural soundscapes. One important aspect of these recordings is they
-can contain sounds of wildlife, which can be analyzed for species abundance, behavior, etc. and support 
-ongoing conservation efforts. Currently, the identification of the widlife species in these thousands of hours of audio 
-requires skilled people and is a tedious effort. Recent advances in artificial intelligence
-technology have drastically improved the ability of machines to perceive audio signals at human levels. This
-library uses machine listening models already-trained on the DNP audio to help automatically identify a variety of
+Since 2001 researchers at Denali National Park have collected extensive audio recordings throughout the park
+in an initiative to protect and study the natural acoustic environment. Recordings often contain sounds of birds which can be analyzed for species abundance, behavior, etc. and support conservation efforts. The identification and annotation of avian species over thousands of hours of audio would require an enormous amount of time from skilled technical staff. Recent advances in artificial intelligence technology have drastically improved the ability of machines to perceive audio signals at human levels. This
+library uses machine listening models already-trained on Denali audio to help automatically identify a variety of
 avian species, speeding the analysis several fold.
 
 
@@ -45,10 +41,10 @@ of detection probabilities of one or more species.
 * 0.0 probability means unlikely detection of species
 * 1.0 probability means likely detection of species
 
-From these probabilities, the user can specify thresholds or use recommended ones for true detections and 
+From these probabilities, the user can specify thresholds (or use recommended ones) for true detections and 
 optionally output these detections or the detection audio slice.
 
-The configuration for the models is carefully tuned for optimal detection performance and it is helpful to
+The configuration for the models is carefully tuned for optimal detection performance. It is helpful to
 understand some of these parameters to be able to interpret the outputs of the library:
  
 * window_size_sec - Size of the detection window
@@ -68,7 +64,7 @@ it for detections.
 
 ##### Detection Thresholds
 
-Most people will likely use these recommended thresholds:
+When running a detector, you will likely use these recommended thresholds:
  
 Species | Code | Recommended Threshold
 --- | --- | ---
@@ -243,7 +239,7 @@ Index(['Relative Time (s)', 'AMRO'], dtype='object')
 ```
 
 And then to create a file that can be read by [Raven](http://www.birds.cornell.edu/brp/raven/RavenFeatures.html)
-built by the folks at Cornell.
+built by the Cornell Lab of Ornithology.
 
 ```python
 >>> model_raven_df_map = probs_to_raven_detections(model_prob_df_map)
