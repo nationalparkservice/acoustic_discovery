@@ -89,7 +89,7 @@ class AcousticDetector(object):
         X_win = np.vstack(tuple(windows))
         return X_win
 
-    def iter_audio(self, audio_filepath, chunk_size=None):
+    def iter_audio(self, audio_filepath, chunk_size):
         """
         Read an input audio file for processing. Reads chunks in a stream because soundscape recordings
         can be quite large.
@@ -99,10 +99,6 @@ class AcousticDetector(object):
             chunk_size (int): size in bytes of chunk to process
         """
         try:
-
-            if chunk_size is None:
-                chunk_size = int(MODEL_SAMPLE_RATE * 60 * 2 * 10)  # 10 min audio
-
             # FFMPEG command to modify input audio to look like training audio.
             # Audio used for training is 16 bit-depth, 44.1k sample rate, and single channel.
             decode_command = [
@@ -139,7 +135,7 @@ class AcousticDetector(object):
             logging.error('Could not read audio file: {}'.format(audio_filepath))
             raise e
 
-    def process(self, audio_filepath):
+    def process(self, audio_filepath, chunk_size=None):
         """
         Get raw probabilities of events for the audio data.
 
@@ -149,9 +145,12 @@ class AcousticDetector(object):
         Returns:
             dict: model obj to detection probabilities
         """
+        if chunk_size is None:
+            chunk_size = int(MODEL_SAMPLE_RATE * 60 * 2 * 10)  # 10 min audio
+
         model_probs_map = defaultdict(list)
 
-        for sig, sample_rate in self.iter_audio(audio_filepath):
+        for sig, sample_rate in self.iter_audio(audio_filepath, chunk_size):
 
             # Finished reading file
             if len(sig) == 0:

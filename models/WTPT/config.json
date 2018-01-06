@@ -1,0 +1,17 @@
+{
+    "model_id": "22877235", 
+    "code": "WTPT", 
+    "dev_model_path": "./results/01-09-2017_16:42:53_expA_ws4.0/expA_ws4.0_WTPT", 
+    "feature_config": {
+        "high_freq": 12000.0, 
+        "feature_dim": 42, 
+        "hop_size": 0.01, 
+        "nfft": 1024, 
+        "num_filters": 512, 
+        "window_size_sec": 4.0, 
+        "low_freq": 100.0, 
+        "axis_dim": 1, 
+        "num_cepstral_coeffs": 14
+    }, 
+    "event_type": "Avian Call"
+}

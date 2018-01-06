@@ -4,3 +4,4 @@ event_models/
 *.ipynb
 .idea/
 .ipynb_checkpoints/
+.DS_store

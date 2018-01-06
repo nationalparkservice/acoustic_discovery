@@ -8,7 +8,7 @@ It was commissioned by the National Park Service to assist with biological resea
 
 * [Background](#background)
 * [Author](#author)
-* [Detection Library]
+* [Detection Library](#usage)
     * [How to Use](#usage)
         * [Command Line](#using-command-line)
         * [Code](#using-code)
@@ -50,9 +50,9 @@ understand some of these parameters to be able to interpret the outputs of the l
 * window_size_sec - Size of the detection window
 * hop_size - Separation between consecutive overlapping detection windows
 
-For the models in the initial release of this library, the window size is 4.0 seconds and the hop size is 0.1 seconds.
-So for a 30 second long file, there should be 300 detections. The first detection window goes from 0.0 seconds 
-in the audio to 4.0 seconds, the second window from 0.1 seconds to 4.1 seconds, and so on.
+For the models in the initial release of this library, the window size is 4.0 seconds and the hop size is 0.01 seconds.
+So for a 30 second long file, there should be 3000 detections. The first detection window goes from 0.0 seconds
+in the audio to 4.0 seconds, the second window from 0.01 seconds to 4.01 seconds, and so on.
 
 
 ##### Models
@@ -154,16 +154,16 @@ While inside the project directory, setup a model:
 
 ```python
 >>> from nps_acoustic_discovery.discover import AcousticDetector
->>> model_dir_paths = ['./test/test_model']
->>> thresholds = [0.5]
+>>> model_dir_paths = ['./models/SWTH']
+>>> thresholds = [0.6]
 >>> ffmpeg_path = '/usr/bin/ffmpeg'   # or where yours is
 >>> detector = AcousticDetector(model_dir_paths, thresholds, ffmpeg_path=ffmpeg_path)
 ```
 
 The models attribute in the detector is a dict that maps
-a model id to the model object. Now the detector houses 1 model
-at a threshold of 0.5 and a feature configuration. The feature
-configuration is derived from the model training phase and should
+a model id to the model object. Now the detector houses 1 Swainson's Thrush (SWTH) model
+at the recommended threshold of 0.6 and a feature configuration. The feature
+configuration is derived from the model training phase and generally should
 not be altered since it could alter detection performance or
 break detection functionality.
 
@@ -171,49 +171,54 @@ break detection functionality.
 >>> len(detector.models)
 1
 >>> detector.models.items()
-dict_items([('13318244', <nps_acoustic_discovery.model.EventModel object at 0x10e4c2710>)])
->>> detector.models['13318244'].detection_threshold
-0.5
->>> detector.models['13318244'].fconfig
-{'window_size_sec': 1.5, 'nfft': 1024, 'axis_dim': 1, 'num_cepstral_coeffs': 14, 'hop_size': 0.1, 'feature_dim': 42, 'num_filters': 512, 'high_freq': 12000.0, 'low_freq': 100.0}
+dict_items([('61474838', <nps_acoustic_discovery.model.EventModel object at 0x10b096c88>)])
+>>> detector.models['61474838'].detection_threshold
+0.6
+>>> detector.models['61474838'].fconfig
+{'axis_dim': 1,
+ 'feature_dim': 42,
+ 'high_freq': 12000.0,
+ 'hop_size': 0.01,
+ 'low_freq': 100.0,
+ 'nfft': 1024,
+ 'num_cepstral_coeffs': 14,
+ 'num_filters': 512,
+ 'window_size_sec': 4.0}
 ```
 
 Now we can use the detector on some audio.
 
 ```python
->>> audio_path = './test/test30s.wav'
+>>> audio_path = './test/SWTH_test_30s.wav'
 >>> model_prob_map = detector.process(audio_path)
-ffmpeg version 3.3.4 Copyright (c) 2000-2017 the FFmpeg developers
-  built with Apple LLVM version 6.0 (clang-600.0.56) (based on LLVM 3.5svn)
-  configuration: --prefix=/usr/local/Cellar/ffmpeg/3.3.4 --enable-shared --enable-pthreads --enable-gpl --enable-version3 --enable-hardcoded-tables --enable-avresample --cc=clang --host-cflags= --host-ldflags= --enable-libmp3lame --enable-libx264 --enable-libxvid --enable-opencl --enable-videotoolbox --disable-lzma --enable-vda
-  libavutil      55. 58.100 / 55. 58.100
-  libavcodec     57. 89.100 / 57. 89.100
-  libavformat    57. 71.100 / 57. 71.100
-  libavdevice    57.  6.100 / 57.  6.100
-  libavfilter     6. 82.100 /  6. 82.100
-  libavresample   3.  5.  0 /  3.  5.  0
-  libswscale      4.  6.100 /  4.  6.100
-  libswresample   2.  7.100 /  2.  7.100
-  libpostproc    54.  5.100 / 54.  5.100
-Guessed Channel Layout for Input Stream #0.0 : mono
+ffmpeg version 1.1.4 Copyright (c) 2000-2013 the FFmpeg developers
+  built on Mar 23 2013 21:16:26 with Apple clang version 4.1 (tags/Apple/clang-421.11.66) (based on LLVM 3.1svn)
+  configuration: --prefix=/opt/local --enable-swscale --enable-avfilter --enable-libmp3lame --enable-libvorbis --enable-libopus --enable-libtheora --enable-libschroedinger --enable-libopenjpeg --enable-libmodplug --enable-libvpx --enable-libspeex --enable-libfreetype --mandir=/opt/local/share/man --enable-shared --enable-pthreads --cc=/usr/bin/clang --arch=x86_64 --enable-yasm --enable-gpl --enable-postproc --enable-libx264 --enable-libxvid
+  libavutil      52. 13.100 / 52. 13.100
+  libavcodec     54. 86.100 / 54. 86.100
+  libavformat    54. 59.106 / 54. 59.106
+  libavdevice    54.  3.102 / 54.  3.102
+  libavfilter     3. 32.100 /  3. 32.100
+  libswscale      2.  1.103 /  2.  1.103
+  libswresample   0. 17.102 /  0. 17.102
+  libpostproc    52.  2.100 / 52.  2.100
+[wav @ 0x7fe049829600] max_analyze_duration 5000000 reached at 5015510
+Guessed Channel Layout for  Input Stream #0.0 : mono
 Input #0, wav, from './test/test30s.wav':
   Duration: 00:00:30.50, bitrate: 706 kb/s
     Stream #0:0: Audio: pcm_s16le ([1][0][0][0] / 0x0001), 44100 Hz, mono, s16, 705 kb/s
-Stream mapping:
-  Stream #0:0 -> #0:0 (pcm_s16le (native) -> pcm_s16le (native))
-Press [q] to stop, [?] for help
 Output #0, s16le, to 'pipe:1':
   Metadata:
-    encoder         : Lavf57.71.100
+    encoder         : Lavf54.59.106
     Stream #0:0: Audio: pcm_s16le, 44100 Hz, mono, s16, 705 kb/s
-    Metadata:
-      encoder         : Lavc57.89.100 pcm_s16le
-size=    2627kB time=00:00:30.50 bitrate= 705.6kbits/s speed=2.39e+03x
-video:0kB audio:2627kB subtitle:0kB other streams:0kB global headers:0kB muxing overhead: 0.000000%
+Stream mapping:
+  Stream #0:0 -> #0:0 (pcm_s16le -> pcm_s16le)
+Press [q] to stop, [?] for help
+size=    2627kB time=00:00:30.50 bitrate= 705.6kbits/s
+video:0kB audio:2627kB subtitle:0 global headers:0kB muxing overhead 0.000000%
 DEBUG:Processing chunk: 1. Audio len (s): 30.5
 DEBUG:Processing features...
-WARNING:frame length (1103) is greater than FFT size (1024), frame will be truncated. Increase NFFT to avoid.
-DEBUG:Input vector shape: (306, 42)
+DEBUG:Input vector shape: (3049, 42)
 ```
 
 Now we have probabilities of detection for the file.
@@ -222,20 +227,33 @@ Now we have probabilities of detection for the file.
 >>> for model, probabilities in model_prob_map.items():
 ...     print("Type: {}, Shape: {}".format(type(probabilities), probabilities.shape))
 ...
-Type: <class 'numpy.ndarray'>, Shape: (306, 1)
+Type: <class 'numpy.ndarray'>, Shape: (3049, 1)
 ```
 
-As you can see, there are 306 raw detection probabities for each 0.1
-seconds of the file. There are some convenience functions for common outputs. One is to
+As you can see, there are 3049 raw detection probabities for each 0.01
+seconds of the file. Let's take a look at the plot:
+
+![alt text](./SWTH_Test_Detection.png "prob plot")
+
+There is a lot going on in the audio and you can see the probabilities changing as
+the model perceives what it thinks are Swainson's Thrush songs. The probabilities collapse
+the last 4 seconds of the file because the window size is a minimum 4 seconds for detection.
+
+From here, there are some convenience functions for common outputs. One is to
 easily create a [Pandas](http://pandas.pydata.org/) dataframe.
 
 ```python
 >>> from nps_acoustic_discovery.output import probs_to_pandas, probs_to_raven_detections
 >>> model_prob_df_map = probs_to_pandas(model_prob_map)
 >>> for model, prob_df in model_prob_df_map.items():
-...     print(prob_df.columns)
+...     print(prob_df.head())
 ...
-Index(['Relative Time (s)', 'AMRO'], dtype='object')
+   Relative Time (s)      SWTH
+0               0.00  0.447792
+1               0.01  0.369429
+2               0.02  0.327936
+3               0.03  0.380597
+4               0.04  0.412197
 ```
 
 And then to create a file that can be read by [Raven](http://www.birds.cornell.edu/brp/raven/RavenFeatures.html)
@@ -248,13 +266,20 @@ built by the Cornell Lab of Ornithology.
 ...     raven_df[header].to_csv('./', 'selection_table.txt', sep='\t', float_format='%.1f', index=False)
 ```
 
-Presumably, we could then count the number of times the species was
-detected:
+Or just look at the detections in the DataFrame and see that there are 4 confirmed detections above our threshold.
 
 ```python
->>> len(raven_df)
+>>> model_raven_df_map = probs_to_raven_detections(model_prob_df_map)
+...     print(raven_df)
+   Begin Time (s)  End Time (s)  Selection Species
+0            0.51          4.51          1    SWTH
+1            5.49          9.49          2    SWTH
+2           12.52         16.52          3    SWTH
+3           22.60         26.60          4    SWTH
 ```
 
+The process of going from probabilities to Raven detections
+applies a low-pass filter to the probabilities and then the provided threshold.
 
 ## Installation
 
@@ -289,6 +314,12 @@ complete. Some common considerations for users that affect performance:
 * Audio Encoding
     * The training audio was 60 and 90 kbps mp3 at 44.1kHz.
     Lower audio quality than this may reduce performance.
+
+
+As an example, below a plot of the probabilities for the test file in the code example above
+with the wav encoded at 320kbps and 60kbps.
+
+![alt text](./Encoding_Interference_Example.png "Encoding Interference")
 
 
 ## Smoke Tests
