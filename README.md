@@ -29,8 +29,10 @@ avian species, speeding the analysis several fold.
 
 ### Author
 
-This library and the associated listening models were created by [Cameron Summers](mailto:scaubrey84@gmail.com) 
-who is a researcher in machine learning and artificial intelligence located in the San Francisco Bay Area.
+This library and the associated listening models were created by [Cameron Summers](mailto:cameron@lightenai.com),
+who is a researcher in machine learning and artificial intelligence located in the San Francisco Bay Area. He founded
+[Lighten A.I.](http://www.lightenai.com), which focuses on bringing the benefits of artificial intelligence to
+industries outside of Silicon Valley.
 
 
 ### Usage
@@ -123,6 +125,9 @@ optional arguments:
                              audio: Audio slices for each detection
 
 --ffmpeg FFMPEG       Path to FFMPEG executable
+--ffmpeg_quiet        Suppress ffmpeg output for detection processing
+--chunk_size_minutes CHUNK_SIZE_MINUTES
+                      Number of minutes of audio to process at a time in large files
 ```
 
 
@@ -138,14 +143,15 @@ exceeded the thresholds:
 
 `python -m nps_acoustic_discovery.discover <path_to_audio> <path_to_save_dir> --m <model_dir1> -m <model_dir2> -t <threshold1> -t <threshold2> -o detections`
 
-Running one model to generate a file with raw probabilities:
+Running one model to generate a file with raw probabilities while suppressing ffmpeg output:
 
-`python -m nps_acoustic_discovery.discover <path_to_audio> <path_to_save_dir> --m <model_dir> -t <threshold> -t -o probs`
+`python -m nps_acoustic_discovery.discover <path_to_audio> <path_to_save_dir> --m <model_dir> -t <threshold> -t -o probs --ffmpeg_quiet`
 
 Running one model to generate an audio file (possibly many) where the
-model detection probabilities exceeded the threshold:
+model detection probabilities exceeded the threshold. Chunk size in minutes is set to 30 seconds
+since there is a lot of RAM available.
 
-`python -m nps_acoustic_discovery.discover <path_to_audio> <path_to_save_dir> --m <model_dir> -t <threshold> -t -o audio`
+`python -m nps_acoustic_discovery.discover <path_to_audio> <path_to_save_dir> --m <model_dir> -t <threshold> -t -o audio --chunk_size_minutes 30`
 
 
 #### Using Code
@@ -190,32 +196,7 @@ Now we can use the detector on some audio.
 
 ```python
 >>> audio_path = './test/SWTH_test_30s.wav'
->>> model_prob_map = detector.process(audio_path)
-ffmpeg version 1.1.4 Copyright (c) 2000-2013 the FFmpeg developers
-  built on Mar 23 2013 21:16:26 with Apple clang version 4.1 (tags/Apple/clang-421.11.66) (based on LLVM 3.1svn)
-  configuration: --prefix=/opt/local --enable-swscale --enable-avfilter --enable-libmp3lame --enable-libvorbis --enable-libopus --enable-libtheora --enable-libschroedinger --enable-libopenjpeg --enable-libmodplug --enable-libvpx --enable-libspeex --enable-libfreetype --mandir=/opt/local/share/man --enable-shared --enable-pthreads --cc=/usr/bin/clang --arch=x86_64 --enable-yasm --enable-gpl --enable-postproc --enable-libx264 --enable-libxvid
-  libavutil      52. 13.100 / 52. 13.100
-  libavcodec     54. 86.100 / 54. 86.100
-  libavformat    54. 59.106 / 54. 59.106
-  libavdevice    54.  3.102 / 54.  3.102
-  libavfilter     3. 32.100 /  3. 32.100
-  libswscale      2.  1.103 /  2.  1.103
-  libswresample   0. 17.102 /  0. 17.102
-  libpostproc    52.  2.100 / 52.  2.100
-[wav @ 0x7fe049829600] max_analyze_duration 5000000 reached at 5015510
-Guessed Channel Layout for  Input Stream #0.0 : mono
-Input #0, wav, from './test/test30s.wav':
-  Duration: 00:00:30.50, bitrate: 706 kb/s
-    Stream #0:0: Audio: pcm_s16le ([1][0][0][0] / 0x0001), 44100 Hz, mono, s16, 705 kb/s
-Output #0, s16le, to 'pipe:1':
-  Metadata:
-    encoder         : Lavf54.59.106
-    Stream #0:0: Audio: pcm_s16le, 44100 Hz, mono, s16, 705 kb/s
-Stream mapping:
-  Stream #0:0 -> #0:0 (pcm_s16le -> pcm_s16le)
-Press [q] to stop, [?] for help
-size=    2627kB time=00:00:30.50 bitrate= 705.6kbits/s
-video:0kB audio:2627kB subtitle:0 global headers:0kB muxing overhead 0.000000%
+>>> model_prob_map = detector.process(audio_path, ffmpeg_quiet=True)
 DEBUG:Processing chunk: 1. Audio len (s): 30.5
 DEBUG:Processing features...
 DEBUG:Input vector shape: (3049, 42)
@@ -233,7 +214,7 @@ Type: <class 'numpy.ndarray'>, Shape: (3049, 1)
 As you can see, there are 3049 raw detection probabities for each 0.01
 seconds of the file. Let's take a look at the plot:
 
-![alt text](./SWTH_Test_Detection.png "prob plot")
+![alt text](./static/SWTH_Test_Detection.png "prob plot")
 
 There is a lot going on in the audio and you can see the probabilities changing as
 the model perceives what it thinks are Swainson's Thrush songs. The probabilities collapse
@@ -281,6 +262,18 @@ Or just look at the detections in the DataFrame and see that there are 4 confirm
 The process of going from probabilities to Raven detections
 applies a low-pass filter to the probabilities and then the provided threshold.
 
+
+#### Large Files
+
+Since soundscape recordings are often very long, one of the considerations for this project
+was to process audio in a stream to avoid loading very large files in memory. There is a parameter
+that controls this in the `process` function of the detector called `chunk_size_minutes`.
+This allows the user to specify how many (whole) minutes of audio to load into memory at a time for processing.
+The output for all chunks is concatenated at the end of processing. Note that currently,
+the detector does not "look-ahead" across the chunk boundaries so there is a gap in detections at these boundaries
+the size of the detection window.
+
+
 ## Installation
 
 This project was developed for and tested with **Python 3.5**.
@@ -312,14 +305,13 @@ complete. Some common considerations for users that affect performance:
 * Background Noise
     * Rain or heavy overlap in species calls
 * Audio Encoding
-    * The training audio was 60 and 90 kbps mp3 at 44.1kHz.
-    Lower audio quality than this may reduce performance.
+    * The training audio is 44.1kHz sampling rate and 60 or 90kbps mp3 encoding.
+     Using a similar or better encoding is advised. To illustrate, below a plot of the
+     probabilities for the test file in the code example above. The wav series is the original 90kbps
+     decoded to wav and the 320k and 60k series are the wav re-encoded to mp3. The higher quality 320k
+     matches much closer the original signal than the 60k.
 
-
-As an example, below a plot of the probabilities for the test file in the code example above
-with the wav encoded at 320kbps and 60kbps.
-
-![alt text](./Encoding_Interference_Example.png "Encoding Interference")
+![alt text](./static/Encoding_Interference_Example.png "Encoding Interference")
 
 
 ## Smoke Tests

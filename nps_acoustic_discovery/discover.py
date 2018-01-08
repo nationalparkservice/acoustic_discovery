@@ -89,7 +89,7 @@ class AcousticDetector(object):
         X_win = np.vstack(tuple(windows))
         return X_win
 
-    def iter_audio(self, audio_filepath, chunk_size):
+    def iter_audio(self, audio_filepath, chunk_size, ffmpeg_quiet):
         """
         Read an input audio file for processing. Reads chunks in a stream because soundscape recordings
         can be quite large.
@@ -113,6 +113,10 @@ class AcousticDetector(object):
                 str(MODEL_SAMPLE_RATE),  # resample if necessary
                 'pipe:1',
             ]
+
+            if ffmpeg_quiet:
+                decode_command += ["-loglevel", "panic"]
+
             proc = subprocess.Popen(decode_command, stdout=subprocess.PIPE)
 
             chunk_idx = 1
@@ -135,22 +139,26 @@ class AcousticDetector(object):
             logging.error('Could not read audio file: {}'.format(audio_filepath))
             raise e
 
-    def process(self, audio_filepath, chunk_size=None):
+    def process(self, audio_filepath, chunk_size_minutes=10, ffmpeg_quiet=False):
         """
         Get raw probabilities of events for the audio data.
 
         Args:
             audio_filepath (str): path to audio
+            chunk_size_minutes (int): number of minutes to process at a time for large files
+            ffmpeg_quiet (bool): whether to suppress ffmpeg output
 
         Returns:
             dict: model obj to detection probabilities
         """
-        if chunk_size is None:
-            chunk_size = int(MODEL_SAMPLE_RATE * 60 * 2 * 10)  # 10 min audio
+        if chunk_size_minutes is None or 1 > chunk_size_minutes:
+            raise ValueError('Chunk size of minutes {} invalid.'.format(chunk_size_minutes))
+
+        chunk_size = int(MODEL_SAMPLE_RATE * 60 * 2 * chunk_size_minutes)
 
         model_probs_map = defaultdict(list)
 
-        for sig, sample_rate in self.iter_audio(audio_filepath, chunk_size):
+        for sig, sample_rate in self.iter_audio(audio_filepath, chunk_size, ffmpeg_quiet):
 
             # Finished reading file
             if len(sig) == 0:
@@ -205,6 +213,16 @@ if __name__ == "__main__":
                         required=True,
                         help='Path to FFMPEG executable')
 
+    parser.add_argument('--ffmpeg_quiet',
+                        action='store_true',
+                        default=False,
+                        help="Suppress ffmpeg output for detection processing")
+
+    parser.add_argument('--chunk_size_minutes',
+                        type=int,
+                        default=10,
+                        help='Number of minutes of audio to process at a time in large files')
+
     args = parser.parse_args()
 
     thresholds = args.threshold
@@ -213,10 +231,12 @@ if __name__ == "__main__":
     save_dir = args.save_dir
     output_type = args.output
     ffmpeg_path = args.ffmpeg
+    ffmpeg_quiet = args.ffmpeg_quiet
+    chunk_size_minutes = args.chunk_size_minutes
 
     detector = AcousticDetector(model_dir_paths, thresholds, ffmpeg_path=ffmpeg_path)
 
-    model_prob_map = detector.process(audio_path)
+    model_prob_map = detector.process(audio_path, chunk_size_minutes=chunk_size_minutes, ffmpeg_quiet=ffmpeg_quiet)
     model_prob_df_map = probs_to_pandas(model_prob_map)
 
     logging.debug('Saving output...')
