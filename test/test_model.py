@@ -11,7 +11,7 @@ from nps_acoustic_discovery.model import EventModel
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
-FFMPEG_PATH = '/opt/local/bin/ffmpeg'
+FFMPEG_PATH = 'ffmpeg'
 
 
 class TestSmoke(unittest.TestCase):
@@ -74,26 +74,10 @@ class TestMP3(unittest.TestCase):
         for model, probs_df in wav_model_probs_df_map.items():
             wav_probs = probs_df[model.event_code]
 
-        import matplotlib
-        matplotlib.use('TkAgg')
-
-        import matplotlib.pyplot as plt
-        plt.plot(wav_probs, label='original_wav')
-        plt.plot(mp3_320k_probs, label='mp3_320kps')
-        plt.plot(mp3_60k_probs, label='mp3_60kps')
-        plt.xlabel('Time (centisec)')
-        plt.ylabel('Detection Probabilty')
-        plt.title('Encoding Interference')
-        plt.plot()
-        plt.legend()
-        plt.show()
-
-        print(len(mp3_320k_probs), len(wav_probs))
         assert abs(len(mp3_320k_probs) - len(wav_probs)) <= 1
 
         num_samples = 1000  # check over ten seconds
         prob_diff_sum = np.sum(abs(mp3_320k_probs[:num_samples] - wav_probs[:num_samples]))
-        print('Probability sum of difference over 10 seconds {}'.format(prob_diff_sum))
         acceptable_prob_error_per_sample = 0.05
         assert prob_diff_sum < acceptable_prob_error_per_sample * num_samples
 
