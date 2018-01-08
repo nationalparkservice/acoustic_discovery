@@ -1,7 +1,7 @@
 # Avian Acoustic Discovery: Alaska
 
 This library was created to automatically detect avian songs in audio. 
-It was commissioned by the National Park Service to assist with biological research. 
+<br>It was commissioned by the National Park Service to assist with ornithological research in Alaska. 
 
 
 ## Table of Contents
@@ -37,7 +37,7 @@ industries outside of Silicon Valley.
 
 ### Usage
 
-At a high level, the library takes in an audio file stored on the local hard drive and outputs a corresponding timeline
+At a high level, the library takes in an audio file and outputs a corresponding timeline
 of detection probabilities of one or more species. 
 
 * 0.0 probability means unlikely detection of species
@@ -297,7 +297,7 @@ To install ffmpeg on Windows, see this the installation steps outline
 A significant amount of time was invested in training species models
 to perform optimally. However, users can expect varied detection
 performance depending on the species/background noise/etc. since
-the model learns from the data and the data isn't always perfect or
+the model learns from the data and the data aren't always perfect or
 complete. Some common considerations for users that affect performance:
 
 * Species
