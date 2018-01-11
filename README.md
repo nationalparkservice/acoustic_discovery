@@ -135,23 +135,23 @@ optional arguments:
 
 Running one model to generate a Raven file:
 
-`python -m nps_acoustic_discovery.discover <path_to_audio> <path_to_save_dir> --m <model_dir> -t <threshold> -t -o detections`
+`python -m nps_acoustic_discovery.discover <path_to_audio> <path_to_save_dir> -m <model_dir> -t <threshold> -o detections`
 
 Running two species models with two different thresholds generates two
 Raven files describing where the model detection probabilities
 exceeded the thresholds:
 
-`python -m nps_acoustic_discovery.discover <path_to_audio> <path_to_save_dir> --m <model_dir1> -m <model_dir2> -t <threshold1> -t <threshold2> -o detections`
+`python -m nps_acoustic_discovery.discover <path_to_audio> <path_to_save_dir> -m <model_dir1> -m <model_dir2> -t <threshold1> -t <threshold2> -o detections`
 
 Running one model to generate a file with raw probabilities while suppressing ffmpeg output:
 
-`python -m nps_acoustic_discovery.discover <path_to_audio> <path_to_save_dir> --m <model_dir> -t <threshold> -t -o probs --ffmpeg_quiet`
+`python -m nps_acoustic_discovery.discover <path_to_audio> <path_to_save_dir> -m <model_dir> -t <threshold> -o probs --ffmpeg_quiet`
 
 Running one model to generate an audio file (possibly many) where the
 model detection probabilities exceeded the threshold. Chunk size in minutes is set to 30 seconds
 since there is a lot of RAM available.
 
-`python -m nps_acoustic_discovery.discover <path_to_audio> <path_to_save_dir> --m <model_dir> -t <threshold> -t -o audio --chunk_size_minutes 30`
+`python -m nps_acoustic_discovery.discover <path_to_audio> <path_to_save_dir> -m <model_dir> -t <threshold> -o audio --chunk_size_minutes 30`
 
 
 #### Using Code
@@ -251,6 +251,7 @@ Or just look at the detections in the DataFrame and see that there are 4 confirm
 
 ```python
 >>> model_raven_df_map = probs_to_raven_detections(model_prob_df_map)
+>>> for model, raven_df in model_raven_df_map.items():
 ...     print(raven_df)
    Begin Time (s)  End Time (s)  Selection Species
 0            0.51          4.51          1    SWTH
@@ -261,6 +262,26 @@ Or just look at the detections in the DataFrame and see that there are 4 confirm
 
 The process of going from probabilities to Raven detections
 applies a low-pass filter to the probabilities and then the provided threshold.
+
+If you wanted to save off slices of audio based on the detections
+it may look something like this with ffmpeg:
+
+```python
+>>> import subprocess
+>>> import os
+>>> model_raven_df_map = probs_to_raven_detections(model_prob_df_map)
+>>> for model, raven_df in model_raven_df_map.items():
+...     slice_length = str(model.fconfig['window_size_sec'])
+...     start_time = str(row['Begin Time (s)'])
+...     output_filename = 'output_audio_slice_{}.wav'.format(idx)
+...     for idx, row in raven_df.iterrows():
+...         ffmpeg_slice_cmd = [ffmpeg_path, '-i', audio_path, '-ss', start_time,
+                                '-t', slice_length, '-acodec', 'copy', output_filename]
+            subprocess.Popen(ffmpeg_slice_cmd)
+```
+
+This should create 4 audio files corresponding to the start
+and end times of detections.
 
 
 #### Large Files

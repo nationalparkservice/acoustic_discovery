@@ -89,7 +89,7 @@ class AcousticDetector(object):
         X_win = np.vstack(tuple(windows))
         return X_win
 
-    def iter_audio(self, audio_filepath, chunk_size, ffmpeg_quiet):
+    def iter_audio(self, audio_filepath, chunk_size, ffmpeg_quiet, chunk_idx_start=1, chunk_idx_end=None):
         """
         Read an input audio file for processing. Reads chunks in a stream because soundscape recordings
         can be quite large.
@@ -97,6 +97,9 @@ class AcousticDetector(object):
         Args:
             audio_filepath (str): path to the audio file
             chunk_size (int): size in bytes of chunk to process
+            ffmpeg_quiet (bool): suppress ffmpeg output
+            chunk_idx_start (int): chunk idx on which to start processing, starting at 1
+            chunk_idx_end (int): chunk idx on which to end processing
         """
         try:
             # FFMPEG command to modify input audio to look like training audio.
@@ -122,6 +125,17 @@ class AcousticDetector(object):
             chunk_idx = 1
             for raw_data in iter(lambda: proc.stdout.read(chunk_size), ''):
 
+                # Don't process before starting chunk
+                if chunk_idx < chunk_idx_start:
+                    logging.debug('Skipping chunk {}'.format(chunk_idx))
+                    chunk_idx += 1
+                    continue
+
+                # Don't process after ending chunk
+                if chunk_idx_end is not None and chunk_idx > chunk_idx_end:
+                    logging.debug('Reached end chunk {}'.format(chunk_idx_end))
+                    break
+
                 num_samples = len(raw_data) / 2  # 2 shorts per sample
                 format_str = '%ih' % num_samples
                 int_data = struct.unpack(format_str, raw_data)
@@ -139,7 +153,7 @@ class AcousticDetector(object):
             logging.error('Could not read audio file: {}'.format(audio_filepath))
             raise e
 
-    def process(self, audio_filepath, chunk_size_minutes=10, ffmpeg_quiet=False):
+    def process(self, audio_filepath, chunk_size_minutes=10, ffmpeg_quiet=False, chunk_idx_start=1, chunk_idx_end=None):
         """
         Get raw probabilities of events for the audio data.
 
@@ -158,7 +172,7 @@ class AcousticDetector(object):
 
         model_probs_map = defaultdict(list)
 
-        for sig, sample_rate in self.iter_audio(audio_filepath, chunk_size, ffmpeg_quiet):
+        for sig, sample_rate in self.iter_audio(audio_filepath, chunk_size, ffmpeg_quiet, chunk_idx_start, chunk_idx_end):
 
             # Finished reading file
             if len(sig) == 0:
