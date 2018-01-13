@@ -30,9 +30,7 @@ avian species, speeding the analysis several fold.
 ### Author
 
 This library and the associated listening models were created by [Cameron Summers](mailto:cameron@lightenai.com),
-who is a researcher in machine learning and artificial intelligence located in the San Francisco Bay Area. He founded
-[Lighten A.I.](http://www.lightenai.com), which focuses on bringing the benefits of artificial intelligence to
-industries outside of Silicon Valley.
+who is a researcher in machine learning and artificial intelligence located in the San Francisco Bay Area.
 
 
 ### Usage
