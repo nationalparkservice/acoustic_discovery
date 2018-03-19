@@ -1,8 +1,10 @@
-# Avian Acoustic Discovery: Alaska
 
-This library was created to automatically detect avian songs in audio. 
-<br>It was commissioned by the National Park Service to assist with ornithological research in Alaska. 
+<img src="https://github.com/nationalparkservice/acoustic_discovery/blob/master/static/AcousticDiscovery_Alaska_headerImage.png" alt="image of Dark-eyed Junco singing over Alaska" >
 
+
+This library was commissioned by the National Park Service to assist with ornithological research in Alaska. <br>
+It's purpose is to automatically detect avian songs in recorded audio. 
+<br>
 
 ## Table of Contents
 
