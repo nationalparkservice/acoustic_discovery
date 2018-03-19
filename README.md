@@ -1,5 +1,5 @@
 
-<img src="https://github.com/nationalparkservice/acoustic_discovery/blob/master/static/AcousticDiscovery_Alaska_headerImage.png" alt="image of Dark-eyed Junco singing over Alaska" >
+<img src="https://github.com/nationalparkservice/acoustic_discovery/blob/master/static/AcousticDiscovery_Alaska_headerImage.png" alt="image of Dark-eyed Junco singing over Alaska" width = 700 px>
 
 
 This library was commissioned by the National Park Service to assist with ornithological research in Alaska. <br>
