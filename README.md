@@ -3,7 +3,7 @@
 
 
 This library was commissioned by the National Park Service to assist with ornithological research in Alaska. <br>
-It's purpose is to automatically detect avian songs in recorded audio. 
+It's purpose is to automatically detect the songs of [select avian species](#detection-thresholds) in recorded audio. 
 <br>
 
 ## Table of Contents
@@ -24,8 +24,7 @@ It's purpose is to automatically detect avian songs in recorded audio.
 ### Background
 
 Since 2001 researchers at Denali National Park have collected extensive audio recordings throughout the park
-in an initiative to protect and study the natural acoustic environment. Recordings often contain sounds of birds which can be analyzed for species abundance, behavior, etc. and support conservation efforts. The identification and annotation of avian species over thousands of hours of audio would require an enormous amount of time from skilled technical staff. Recent advances in artificial intelligence technology have drastically improved the ability of machines to perceive audio signals at human levels. This
-library uses machine listening models already-trained on Denali audio to help automatically identify a variety of
+in an initiative to protect and study the natural acoustic environment. Recordings often contain sounds which can used to better understand avian occupancy, abundance, phenological timing, or other quantities of interest to conservation efforts. The identification and annotation of avian species over thousands of hours of audio would require an enormous amount of time from skilled technical staff. Recent advances in artificial intelligence technology have drastically improved the ability of machines to perceive audio signals at human levels. This library uses machine listening models pre-trained on Denali audio to help automatically identify a variety of
 avian species, speeding the analysis several fold.
 
 
