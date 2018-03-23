@@ -38,12 +38,14 @@ who is a researcher in machine learning and artificial intelligence located in t
 ### Usage
 
 At a high level, the library takes in an audio file and outputs a corresponding timeline
-of detection probabilities of one or more species. 
+of detection probabilities for one or more species. 
+
+<img src="https://github.com/nationalparkservice/acoustic_discovery/blob/master/static/Processing%20Flow%20Diagram.png" alt="image of Dark-eyed Junco singing over Alaska" width = 700 px>
 
 * 0.0 probability means unlikely detection of species
 * 1.0 probability means likely detection of species
 
-From these probabilities, the user can specify thresholds (or use recommended ones) for true detections and 
+From these probabilities, the user can specify thresholds ([_or use recommended ones_](#detection-thresholds)) for true detections and 
 optionally output these detections or the detection audio slice.
 
 The configuration for the models is carefully tuned for optimal detection performance. It is helpful to
