@@ -19,6 +19,7 @@ It's purpose is to automatically detect the songs of [select avian species](#det
 * [Testing](#smoke-tests)
 * [Troubleshooting](#troubleshooting)
 * [Dependencies](#dependencies)
+* [Public Domain](#public-domain)
 
 
 ### Background
@@ -290,7 +291,7 @@ was to process audio in a stream to avoid loading very large files in memory. Th
 that controls this in the `process` function of the detector called `chunk_size_minutes`.
 This allows the user to specify how many (whole) minutes of audio to load into memory at a time for processing.
 The output for all chunks is concatenated at the end of processing. Note that currently,
-the detector does not "look-ahead" across the chunk boundaries so there is a gap in detections at these boundaries
+the detector does not "look ahead" across the chunk boundaries so there is a gap in detections at these boundaries
 the size of the detection window.
 
 
@@ -307,8 +308,7 @@ This library also requires [ffmpeg](https://ffmpeg.org/) for file
 conversion - which implies it also handles many different types
 of audio file encodings - and for stream processing of large files.
 To install ffmpeg on Windows, see this the installation steps outline
- [here](https://github.com/nationalparkservice/ffaudIO) by a member of
- the National Park Service. For static builds on all platforms, see
+ [here](https://github.com/nationalparkservice/ffaudIO). For static builds on all platforms, see
  the [downloads](https://ffmpeg.org/download.html) on the ffmpeg site.
 
 
@@ -325,11 +325,11 @@ complete. Some common considerations for users that affect performance:
 * Background Noise
     * Rain or heavy overlap in species calls
 * Audio Encoding
-    * The training audio is 44.1kHz sampling rate and 60 or 90kbps mp3 encoding.
-     Using a similar or better encoding is advised. To illustrate, below a plot of the
+    * **The training audio is 44.1kHz sampling rate and 60 or 90kbps mp3 encoding.
+     Using a similar or better encoding is advised.** To illustrate, below a plot of the
      probabilities for the test file in the code example above. The wav series is the original 90kbps
-     decoded to wav and the 320k and 60k series are the wav re-encoded to mp3. The higher quality 320k
-     matches much closer the original signal than the 60k.
+     decoded to wav and the 320kbps and 60kbps series are the wav re-encoded to mp3. The higher quality 320kbps
+     matches much closer the original signal than the 60kbps.
 
 ![alt text](./static/Encoding_Interference_Example.png "Encoding Interference")
 
