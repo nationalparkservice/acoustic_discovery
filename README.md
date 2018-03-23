@@ -40,7 +40,7 @@ who is a researcher in machine learning and artificial intelligence located in t
 At a high level, the library takes in an audio file and outputs a corresponding timeline
 of detection probabilities for one or more species. 
 
-<img src="https://github.com/nationalparkservice/acoustic_discovery/blob/master/static/Processing%20Flow%20Diagram.png" alt="image of Dark-eyed Junco singing over Alaska" width = 700 px>
+<img src="https://github.com/nationalparkservice/acoustic_discovery/blob/master/static/Processing%20Flow%20Diagram.png" alt="image of Dark-eyed Junco singing over Alaska" width = 1000 px>
 
 * 0.0 probability means unlikely detection of species
 * 1.0 probability means likely detection of species
