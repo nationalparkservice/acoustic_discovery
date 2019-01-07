@@ -3,6 +3,7 @@ __author__ = "Cameron Summers"
 import logging
 import json
 import os
+import argparse
 
 import keras
 import numpy as np
@@ -78,3 +79,45 @@ class EventModel(object):
 
         self.detection_threshold = threshold
 
+
+def get_available_models(models_path='./models/'):
+    """
+    Return a dictionary of species code to model path for available models.
+
+    Args:
+        models_path (str): path to models
+
+    Returns:
+        dict: species code to model path
+    """
+
+    models_dict = dict()
+    for model_dir in os.listdir(models_path):
+        if os.path.isfile(os.path.join(models_path, model_dir, 'model_params.h5')):  # make sure it is a model dir
+            models_dict[model_dir] = os.path.join(models_path, model_dir)
+    return models_dict
+
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser('Audio event detection for the National Park Service',
+                                     formatter_class=argparse.RawTextHelpFormatter)
+
+    parser.add_argument('-s', '--show',
+                        action='store_true',
+                        help='Show the available models and paths')
+
+    parser.add_argument('-d', '--model_dir',
+                        action='append',
+                        required=False,
+                        help='path to model directory',
+                        default='./models/')
+
+    args = parser.parse_args()
+
+    model_dir = args.model_dir
+
+    if args.show:
+        print("\nAvailable Models and Locations at {}".format(model_dir))
+        for model, path in get_available_models(model_dir).items():
+            print("\t{}: {}".format(model, path))
