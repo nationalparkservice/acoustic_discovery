@@ -1,0 +1,17 @@
+{
+ "event_type": "Avian Call", 
+ "model_id": "1.241462", 
+ "code": "SURF", 
+ "feature_config": {
+  "window_size_sec": 4.0, 
+  "low_freq": 500.0, 
+  "axis_dim": 1, 
+  "num_cepstral_coeffs": null, 
+  "high_freq": 5000.0, 
+  "feature_dim": 64, 
+  "hop_size": 0.01, 
+  "nfft": 512, 
+  "num_filters": 64
+ }, 
+ "dev_model_path": "./results/24-08-2018_22:40:13_phase2_mel64_augsolo2_patience20_adam_2layers200units_fft512_ws4.0_multicall_wsNone/phase2_mel64_augsolo2_patience20_adam_2layers200units_fft512_ws4.0_multicall_wsNone_SURF"
+}
