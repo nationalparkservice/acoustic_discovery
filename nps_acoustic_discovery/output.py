@@ -7,10 +7,15 @@ Utility functions
 import os
 import datetime
 import copy
+import subprocess
+import logging
 
 import numpy as np
 import pandas as pd
 from scipy.signal import butter, lfilter
+
+
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
 
 def probs_to_pandas(model_prob_map, start_datetime=None):
@@ -91,6 +96,79 @@ def probs_to_raven_detections(model_prob_df_map, filter_probs=True):
         model_raven_df_map[model] = detections_df
 
     return model_raven_df_map
+
+
+def save_detections_to_audio(model_prob_df_map, audio_path, audio_basename, audio_ext, save_dir, ffmpeg_path):
+    # Save detections at given threshold as individual corresponding audio files
+
+    model_raven_df_map = probs_to_raven_detections(model_prob_df_map)
+
+    for model, raven_df in model_raven_df_map.items():
+        create_audio = input(
+            'About to create {} audio files for {} detections. Are you sure? (y/N)'.format(len(raven_df),
+                                                                                           model.event_code))
+
+        if create_audio not in ['y', 'Y']:
+            logging.info('Process aborted by user.')
+            continue
+
+        for idx, row in raven_df.iterrows():
+            start_time = row['Begin Time (s)']
+            end_time = start_time + model.fconfig['window_size_sec']
+
+            out_filename = '{}_{}_s{:.1f}_e{:.1f}_m{}{}'.format(os.path.basename(audio_basename),
+                                                                model.event_code,
+                                                                start_time,
+                                                                end_time,
+                                                                model.model_id,
+                                                                audio_ext
+                                                                )
+
+            outpath = os.path.join(save_dir, out_filename)
+
+            # Save the detection's slice of audio
+            ffmpeg_slice_cmd = [ffmpeg_path, '-i', audio_path,
+                                '-ss', str(start_time), '-t', str(model.fconfig['window_size_sec']),
+                                '-acodec', 'copy', outpath]
+            subprocess.Popen(ffmpeg_slice_cmd)
+
+
+def save_detections_to_raven(model_prob_df_map, audio_basename, save_dir):
+
+    # Save detections at given threshold to Raven file
+
+    model_raven_df_map = probs_to_raven_detections(model_prob_df_map)
+    for model, raven_df in model_raven_df_map.items():
+        if len(raven_df) == 0:
+            logging.info(
+                'No detections at threshold {} for model id {} on code {}'.format(model.detection_threshold,
+                                                                                  model.model_id,
+                                                                                  model.event_code))
+        else:
+            header = ['Selection', 'Begin Time (s)', 'End Time (s)', 'Species']
+            raven_df[header].to_csv(
+                os.path.join(save_dir, '{}_{}_{}_th{}_selection_table.txt'.format(os.path.basename(audio_basename),
+                                                                                  model.event_code,
+                                                                                  model.model_id,
+                                                                                  model.detection_threshold)),
+                sep='\t',
+                float_format='%.1f',
+                index=False
+            )
+
+
+def save_probs_to_csv(model_prob_df_map, audio_basename, save_dir):
+    # Save raw probabilities to tsv file
+
+    for model, df in model_prob_df_map.items():
+        df.to_csv(os.path.join(save_dir, '{}_{}_{}_probs_df.tsv'.format(os.path.basename(audio_basename),
+                                                                        model.event_code,
+                                                                        model.model_id,
+                                                                        )),
+                  sep='\t',
+                  float_format='%0.4f',
+                  index=False
+                  )
 
 
 def lowpass_filter(signal):

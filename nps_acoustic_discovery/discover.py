@@ -14,7 +14,8 @@ import argparse
 
 import numpy as np
 
-from nps_acoustic_discovery.output import probs_to_pandas, probs_to_raven_detections
+from nps_acoustic_discovery.output import probs_to_pandas, \
+    save_detections_to_audio, save_detections_to_raven, save_probs_to_csv
 from nps_acoustic_discovery.feature import FeatureExtractor
 from nps_acoustic_discovery.model import EventModel
 
@@ -22,6 +23,86 @@ logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
 # Training audio used 44100Hz sample rate
 MODEL_SAMPLE_RATE = 44100
+
+
+def minutes_to_bytes(num_minutes):
+    """
+    Get number of bytes in num_minutes of audio.
+
+    Args:
+        num_minutes (int): number of minutes
+
+    Returns:
+        int: number of bytes
+    """
+    # bytes / chunk => samples / seconds * seconds / minutes * bytes / sample * minutes / chunk
+    return int(MODEL_SAMPLE_RATE * 60 * 2 * num_minutes)
+
+
+def get_ffmpeg_decode_cmd(ffmpeg_path, audio_filepath, start_seconds=None, duration_seconds=None, ffmpeg_quiet=False):
+    """
+    Get a list of arguments to pass to ffmpeg for audio decoding.
+
+    Args:
+        ffmpeg_path (str): path to ffmpeg
+        audio_filepath (str): path to audio file
+        ffmpeg_quiet (bool): whether to suppress output
+
+    Returns:
+        list: list of parameters for subprocess command
+    """
+
+    # FFMPEG command to modify input audio to look like training audio.
+    # Audio used for training is 16 bit-depth, 44.1k sample rate, and single channel.
+    decode_command = [
+        ffmpeg_path,
+    ]
+
+    # See documentation for this behavior https://trac.ffmpeg.org/wiki/Seeking
+    # Do fast seek on input
+    if start_seconds is not None:
+        decode_command += ['-ss', str(start_seconds)]
+
+    decode_command += ['-i', audio_filepath]
+
+    # See documentation for this behavior https://trac.ffmpeg.org/wiki/Seeking
+    # Timestamps are reset with input seeking -ss above
+    if duration_seconds is not None:
+        decode_command += ['-to', str(duration_seconds)]
+
+    # Normalize audio to training audio params and pipe for feature processing
+    decode_command += [
+        '-f',
+        's16le',  # raw signed 16-bit little endian
+        '-ac',
+        '1',  # force to mono if necessary
+        '-ar',
+        str(MODEL_SAMPLE_RATE),  # resample if necessary
+        'pipe:1',
+    ]
+
+    if ffmpeg_quiet:
+        decode_command += ["-loglevel", "panic"]
+
+    return decode_command
+
+
+def raw_ffmpeg_data_to_ndarray(raw_data):
+    """
+    Convert the raw byte data from ffmpeg decoding to numpy array.
+
+    Args:
+        raw_data (bytes): raw data from ffmpeg decoding
+
+    Returns:
+        np.ndarray: numpy array of ints
+    """
+    num_samples = len(raw_data) / 2  # 2 shorts per sample
+    format_str = '%ih' % num_samples
+    int_data = struct.unpack(format_str, raw_data)
+    signal = np.array(int_data)
+
+    return signal
 
 
 class AcousticDetector(object):
@@ -102,23 +183,7 @@ class AcousticDetector(object):
             chunk_idx_end (int): chunk idx on which to end processing
         """
         try:
-            # FFMPEG command to modify input audio to look like training audio.
-            # Audio used for training is 16 bit-depth, 44.1k sample rate, and single channel.
-            decode_command = [
-                self.ffmpeg_path,
-                '-i',
-                audio_filepath,
-                '-f',
-                's16le', # raw signed 16-bit little endian
-                '-ac',
-                '1', # force to mono if necessary
-                '-ar',
-                str(MODEL_SAMPLE_RATE),  # resample if necessary
-                'pipe:1',
-            ]
-
-            if ffmpeg_quiet:
-                decode_command += ["-loglevel", "panic"]
+            decode_command = get_ffmpeg_decode_cmd(self.ffmpeg_path, audio_filepath, ffmpeg_quiet=ffmpeg_quiet)
 
             proc = subprocess.Popen(decode_command, stdout=subprocess.PIPE)
 
@@ -136,15 +201,11 @@ class AcousticDetector(object):
                     logging.debug('Reached end chunk {}'.format(chunk_idx_end))
                     break
 
-                num_samples = len(raw_data) / 2  # 2 shorts per sample
-                format_str = '%ih' % num_samples
-                int_data = struct.unpack(format_str, raw_data)
-                signal = np.array(int_data)
+                signal = raw_ffmpeg_data_to_ndarray(raw_data)
 
                 if len(signal) > 0:
                     logging.debug('Processing chunk: {}. Audio len (s): {}'.format(chunk_idx,
-                                                                                   len(signal) / float(
-                                                                                       MODEL_SAMPLE_RATE)))
+                                                                    len(signal) / float(MODEL_SAMPLE_RATE)))
 
                 yield signal, MODEL_SAMPLE_RATE
                 chunk_idx += 1
@@ -153,7 +214,7 @@ class AcousticDetector(object):
             logging.error('Could not read audio file: {}'.format(audio_filepath))
             raise e
 
-    def process(self, audio_filepath, chunk_size_minutes=10, ffmpeg_quiet=False, chunk_idx_start=1, chunk_idx_end=None):
+    def process(self, audio_filepath, chunk_size_minutes=10, ffmpeg_quiet=True, chunk_idx_start=1, chunk_idx_end=None):
         """
         Get raw probabilities of events for the audio data.
 
@@ -168,17 +229,17 @@ class AcousticDetector(object):
         if chunk_size_minutes is None or 1 > chunk_size_minutes:
             raise ValueError('Chunk size of minutes {} invalid.'.format(chunk_size_minutes))
 
-        chunk_size = int(MODEL_SAMPLE_RATE * 60 * 2 * chunk_size_minutes)
+        chunk_size_bytes = minutes_to_bytes(chunk_size_minutes)
 
         model_probs_map = defaultdict(list)
 
-        for sig, sample_rate in self.iter_audio(audio_filepath, chunk_size, ffmpeg_quiet, chunk_idx_start, chunk_idx_end):
+        for signal, sample_rate in self.iter_audio(audio_filepath, chunk_size_bytes, ffmpeg_quiet, chunk_idx_start, chunk_idx_end):
 
             # Finished reading file
-            if len(sig) == 0:
+            if len(signal) == 0:
                 break
 
-            X_win = self.get_feature_vector(sig, sample_rate)
+            X_win = self.get_feature_vector(signal, sample_rate)
             for model_id, model in self.models.items():
                 feat = np.copy(X_win)
                 prob = model.process(feat)
@@ -190,8 +251,125 @@ class AcousticDetector(object):
 
         return model_probs_map
 
+    def process_sampled(self, audio_filepath, num_days, offset_minutes, step_minutes, duration_minutes, num_samples, ffmpeg_quiet=False):
+        """
+        Get raw probabilities of events for the audio data via a sampling scheme. The purpose is to allow
+         faster processing of a large file while still extracting meaningful information. In the ornithological
+         case for example, this could be used to sample a few minutes from each hour through a portion of a day.
+         The ffmpeg fast input seek and output seek are used for locating positions within the file.
+
+        IMPORTANT NOTE: The sampling process is intended to speed up processing large files where not
+         all of the audio needs to be read and processed. Because of this, the ffmpeg fast seek is used
+         to quickly locate the samples in the file. But beware that for mp3 files, the fast seek estimates
+         frame locations based on bit rates so this location is an estimate and may be not exact. Trading
+         some precision for speed here.
+
+        Also NOTE: This function assumes the user knows there is enough audio to accomodate the provided sampling scheme.
+
+        Example Scenario: Start sampling 20 minutes into file, get fifteen 5-minute samples every 30 minutes for 2 days.
+        Params:
+
+            num_days = 2
+            offset_minutes = 20
+            step_minutes = 30
+            duration_minutes = 5
+            num_samples = 15
+
+        Args:
+            audio_filepath (str): path to audio
+            num_days (int): number of days to apply the scheme, should be 1 unless file is > 24hrs
+            offset_minutes (int): minutes from the start of the file to start sampling scheme
+            step_minutes (int): minutes between the start of each sample
+            duration_minutes (int): minutes in each sample
+            num_samples (int): number of samples to take from file
+            ffmpeg_quiet (bool): whether to suppress ffmpeg output
+
+        Returns:
+            list: list days with a list of samples with maps of model obj to detection probabilities
+        """
+        # Basic argument validation
+        for var_name, var in {'num_days': num_days, 'num_samples': num_samples, 'offset_minutes': offset_minutes,
+                    'step_minutes': step_minutes, 'duration_minutes': duration_minutes}.items():
+            if not isinstance(var, int) or var < 1:
+                raise ValueError('Invalid {}. Must be an integer great than 0.'.format(var_name))
+
+        offset_seconds = offset_minutes * 60  # minutes * seconds / minute
+        sample_duration_seconds = duration_minutes * 60
+
+        try:
+            day_results = []
+
+            for day_idx in range(num_days):
+
+                day_offset_seconds = day_idx * 24 * 60 * 60  # hours / day * minutes / hour * seconds / minute
+
+                samples_probs = []
+
+                for sample_idx in range(num_samples):
+
+                    # Get sample offset and start
+                    sample_offset_seconds = 60 * step_minutes * sample_idx
+                    sample_start_seconds = offset_seconds + day_offset_seconds + sample_offset_seconds
+
+                    decode_command = get_ffmpeg_decode_cmd(self.ffmpeg_path,
+                                                           audio_filepath,
+                                                           start_seconds=sample_start_seconds,
+                                                           duration_seconds=sample_duration_seconds,
+                                                           ffmpeg_quiet=ffmpeg_quiet)
+
+                    proc = subprocess.Popen(decode_command, stdout=subprocess.PIPE)
+
+                    model_probs_map = defaultdict(list)
+
+                    raw_data = proc.stdout.read()
+                    signal = raw_ffmpeg_data_to_ndarray(raw_data)
+
+                    signal_len_minutes = len(signal) / float(MODEL_SAMPLE_RATE) / 60.0
+
+                    # Got significantly different amount (6 sec) of audio back than expected
+                    if abs(signal_len_minutes - duration_minutes) > 0.1:
+                        logging.warning("Expected {} minutes of audio but got {}.".format(duration_minutes,
+                                                                                          signal_len_minutes))
+
+                    # Got no audio back
+                    if len(signal) == 0:
+                        raise ValueError('Signal length 0 for sample {} on day {}. Double check your sampling scheme.'
+                                         .format(sample_idx + 1, day_idx + 1))
+
+                    # Create feature vector and run through models
+                    X_win = self.get_feature_vector(signal, MODEL_SAMPLE_RATE)
+                    for model_id, model in self.models.items():
+                        feat = np.copy(X_win)
+                        prob = model.process(feat)
+                        model_probs_map[model].append(prob)
+
+                    samples_probs.append(model_probs_map)
+
+                    logging.debug('Day {}, processing sample: {}. Audio len (min): {}'.format(day_idx + 1, sample_idx + 1,
+                                                                                            signal_len_minutes))
+
+                if len(samples_probs) < num_samples:
+                    logging.warning(
+                        "Asked for {} samples but only get {} before end of file {}.".format(num_samples,
+                                                                                            len(samples_probs)),
+                                                                                            audio_filepath)
+                day_results.append(samples_probs)
+
+            if len(day_results) < num_days:
+                logging.warning(
+                    "Asked for {} days but only get {} before end of file {}.".format(num_days,
+                                                                                         len(day_results)),
+                    audio_filepath)
+
+        except Exception as e:
+            logging.error('Could not read audio file for sampling scheme: {}'.format(audio_filepath))
+            raise e
+
+        return day_results
+
 
 if __name__ == "__main__":
+
     parser = argparse.ArgumentParser('Audio event detection for the National Park Service',
                                      formatter_class=argparse.RawTextHelpFormatter)
 
@@ -256,73 +434,13 @@ if __name__ == "__main__":
     logging.debug('Saving output...')
 
     audio_filename = os.path.basename(audio_path)
-    audio_name = os.path.splitext(audio_filename)[0]
-    audio_ext = os.path.splitext(audio_filename)[-1]
+    audio_basename, audio_ext = os.path.splitext(audio_filename)
 
     if output_type == 'probs':
-        # Save raw probabilities to tsv file
+        save_probs_to_csv(model_prob_df_map, audio_basename, save_dir)
 
-        for model, df in model_prob_df_map.items():
-            df.to_csv(os.path.join(save_dir, '{}_{}_{}_probs_df.tsv'.format(os.path.basename(audio_name),
-                                                                            model.event_code,
-                                                                            model.model_id,
-            )),
-                      sep='\t',
-                      float_format='%0.4f',
-                      index=False
-            )
     elif output_type == 'detections':
-        # Save detections at given threshold to Raven file
+        save_detections_to_raven(model_prob_df_map, audio_basename, save_dir)
 
-        model_raven_df_map = probs_to_raven_detections(model_prob_df_map)
-        for model, raven_df in model_raven_df_map.items():
-            if len(raven_df) == 0:
-                logging.info(
-                    'No detections at threshold {} for model id {} on code {}'.format(model.detection_threshold,
-                                                                                      model.model_id,
-                                                                                      model.event_code))
-            else:
-                header = ['Selection', 'Begin Time (s)', 'End Time (s)', 'Species']
-                raven_df[header].to_csv(
-                    os.path.join(save_dir, '{}_{}_{}_th{}_selection_table.txt'.format(os.path.basename(audio_name),
-                                                                                      model.event_code,
-                                                                                      model.model_id,
-                                                                                      model.detection_threshold)),
-                    sep='\t',
-                    float_format='%.1f',
-                    index=False
-                )
     elif output_type == 'audio':
-        # Save detections at given threshold as individual corresponding audio files
-
-        model_raven_df_map = probs_to_raven_detections(model_prob_df_map)
-
-        for model, raven_df in model_raven_df_map.items():
-            create_audio = input(
-                'About to create {} audio files for {} detections. Are you sure? (y/N)'.format(len(raven_df),
-                                                                                               model.event_code))
-
-            if create_audio not in ['y', 'Y']:
-                logging.info('Process aborted by user.')
-                continue
-
-            for idx, row in raven_df.iterrows():
-                start_time = row['Begin Time (s)']
-                end_time = start_time + model.fconfig['window_size_sec']
-
-                out_filename = '{}_{}_s{:.1f}_e{:.1f}_m{}{}'.format(os.path.basename(audio_name),
-                                                            model.event_code,
-                                                            start_time,
-                                                            end_time,
-                                                            model.model_id,
-                                                            audio_ext
-                )
-
-                outpath = os.path.join(save_dir, out_filename)
-
-                # Save the detection's slice of audio
-                ffmpeg_slice_cmd = [ffmpeg_path, '-i', audio_path,
-                                    '-ss', str(start_time), '-t', str(model.fconfig['window_size_sec']),
-                                    '-acodec', 'copy', outpath]
-                subprocess.Popen(ffmpeg_slice_cmd)
-
+        save_detections_to_audio(model_prob_df_map, audio_path, audio_basename, audio_ext, save_dir, ffmpeg_path)
