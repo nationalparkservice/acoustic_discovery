@@ -39,12 +39,9 @@ who is a researcher in machine learning and artificial intelligence located in t
 
 ### Usage
 
-At a high level, the library takes in (1) audio files, (2) species lists, and (3) detection thresholds for each species, and outputs a corresponding timeline of detection probabilities for each species. Users may also choose to output audio clips of each detection exceeding the threshold.
+At a high level, the library takes in (1) audio files, (2) species lists, and (3) detection thresholds for each species, and outputs a corresponding timeline of detection probabilities for each species. A probability of 0.0 means the model absolutely expects species **is not** vocalizing, while a probability of 1.0 means the model absolutely expects species **is** vocalizing. Users may also choose to output audio clips of each detection exceeding the threshold. These can be useful for rapid, visual proofing of automated analysis results.
 
-<img src="https://github.com/nationalparkservice/acoustic_discovery/blob/master/static/Processing%20Flow%20Diagram.png" alt="process diagram" width = 839 px>
-
-* Probability of 0.0 means the model absolutely expects species **is not** vocalizing
-* Probability of 1.0 means the model absolutely expects species **is** vocalizing
+<img src="https://github.com/nationalparkservice/acoustic_discovery/blob/master/static/Processing%20Flow%20Diagram.png" alt="process diagram" width = 837 px>
 
 The configuration for the models is carefully tuned for optimal detection performance. It is helpful to
 understand some of these parameters to be able to interpret the outputs of the library:
@@ -55,7 +52,7 @@ understand some of these parameters to be able to interpret the outputs of the l
 For the models in this library, the window size is 4.0 seconds and the hop size is 0.01 seconds. Thus for a 30 second long file, there should be 3000 detections. The first detection window goes from 0.0 seconds in the audio to 4.0 seconds, the second window from 0.01 seconds to 4.01 seconds, and so on.
 
 
-<img src="https://github.com/nationalparkservice/acoustic_discovery/blob/master/static/Acoustic%20Discovery%20rolling%20window%20diagram.png" alt="diagram of rolling window schema" width = 800 px>
+<img src="https://github.com/nationalparkservice/acoustic_discovery/blob/master/static/Acoustic%20Discovery%20rolling%20window%20diagram.png" alt="diagram of rolling window schema" width = 830 px>
 
 ##### Models
 
