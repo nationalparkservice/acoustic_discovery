@@ -39,22 +39,18 @@ who is a researcher in machine learning and artificial intelligence located in t
 
 ### Usage
 
-At a high level, the library takes in an audio file and outputs a corresponding timeline
-of detection thresholds for one or more species. 
+At a high level, the library takes in (1) audio files, (2) species lists, and (3) detection thresholds for each species, and outputs a corresponding timeline of detection probabilities for each species. Users may also choose to output audio clips of each detection exceeding the threshold.
 
 <img src="https://github.com/nationalparkservice/acoustic_discovery/blob/master/static/Processing%20Flow%20Diagram.png" alt="process diagram" width = 839 px>
 
-* Threshold of 0.0 means unlikely detection of species
-* Threshold of 1.0 means likely detection of species
-
-From these probabilities, the user can specify thresholds ([_or use recommended ones_](#detection-thresholds)) for true detections and 
-optionally output these detections and/or the audio clips of each thresholded detection.
+* Probability of 0.0 means the model absolutely expects species **is not** vocalizing
+* Probability of 1.0 means the model absolutely expects species **is** vocalizing
 
 The configuration for the models is carefully tuned for optimal detection performance. It is helpful to
 understand some of these parameters to be able to interpret the outputs of the library:
  
-* window_size_sec - Size of the detection window
-* hop_size - Separation between consecutive overlapping detection windows
+* *window_size_sec* - Size of the detection window
+* *hop_size* - Separation between consecutive overlapping detection windows
 
 For the models in this library, the window size is 4.0 seconds and the hop size is 0.01 seconds. Thus for a 30 second long file, there should be 3000 detections. The first detection window goes from 0.0 seconds in the audio to 4.0 seconds, the second window from 0.01 seconds to 4.01 seconds, and so on.
 
