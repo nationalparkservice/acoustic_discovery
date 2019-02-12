@@ -25,8 +25,9 @@ It's purpose is to automatically detect the songs of [select avian species](#det
 ### Background
 
 Since 2001 researchers at Denali National Park have collected extensive audio recordings throughout the park
-in an initiative to protect and study the natural acoustic environment. Recordings often contain sounds which can used to better understand avian occupancy, abundance, phenological timing, or other quantities of interest to conservation efforts. The identification and annotation of avian species over thousands of hours of audio would require an enormous amount of time from skilled technical staff. Recent advances in artificial intelligence technology have drastically improved the ability of machines to perceive audio signals at human levels. This library uses machine listening models pre-trained on Denali audio to help automatically identify a variety of
-avian species, speeding the analysis several fold.
+in an initiative to protect and study the natural acoustic environment. Recordings often contain sounds which can used to better understand avian occupancy, abundance, phenological timing, or other quantities of interest to conservation efforts. 
+
+Recent advances in artificial intelligence technology have drastically improved the ability of machines to perceive audio signals at human levels. The identification and annotation of avian species over thousands of hours of audio previously would have required an enormous amount of time from skilled technical staff. This library uses machine listening models pre-trained on NPS audio files to help automatically identify avian species. It is our hope that it will catalyze the use of long-format audio recordings for avian conservation work throughout the state.
 
 ---
 
