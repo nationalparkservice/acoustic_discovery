@@ -1,8 +1,10 @@
-# Avian Acoustic Discovery: Alaska
 
-This library was created to automatically detect avian songs in audio. 
-<br>It was commissioned by the National Park Service to assist with ornithological research in Alaska. 
+<img src="https://github.com/nationalparkservice/acoustic_discovery/blob/master/static/AcousticDiscovery_Alaska_headerImage.png" alt="image of Dark-eyed Junco singing over Alaska" width = 700 px>
 
+
+This library was commissioned by the National Park Service to assist with ornithological research in Alaska. <br>
+It's purpose is to automatically detect the songs of [select avian species](#detection-thresholds) in recorded audio. 
+<br>
 
 ## Table of Contents
 
@@ -17,13 +19,13 @@ This library was created to automatically detect avian songs in audio.
 * [Testing](#smoke-tests)
 * [Troubleshooting](#troubleshooting)
 * [Dependencies](#dependencies)
+* [Public Domain](#public-domain)
 
 
 ### Background
 
 Since 2001 researchers at Denali National Park have collected extensive audio recordings throughout the park
-in an initiative to protect and study the natural acoustic environment. Recordings often contain sounds of birds which can be analyzed for species abundance, behavior, etc. and support conservation efforts. The identification and annotation of avian species over thousands of hours of audio would require an enormous amount of time from skilled technical staff. Recent advances in artificial intelligence technology have drastically improved the ability of machines to perceive audio signals at human levels. This
-library uses machine listening models already-trained on Denali audio to help automatically identify a variety of
+in an initiative to protect and study the natural acoustic environment. Recordings often contain sounds which can used to better understand avian occupancy, abundance, phenological timing, or other quantities of interest to conservation efforts. The identification and annotation of avian species over thousands of hours of audio would require an enormous amount of time from skilled technical staff. Recent advances in artificial intelligence technology have drastically improved the ability of machines to perceive audio signals at human levels. This library uses machine listening models pre-trained on Denali audio to help automatically identify a variety of
 avian species, speeding the analysis several fold.
 
 
@@ -36,13 +38,15 @@ who is a researcher in machine learning and artificial intelligence located in t
 ### Usage
 
 At a high level, the library takes in an audio file and outputs a corresponding timeline
-of detection probabilities of one or more species. 
+of detection probabilities for one or more species. 
+
+<img src="https://github.com/nationalparkservice/acoustic_discovery/blob/master/static/Processing%20Flow%20Diagram.png" alt="process diagram" width = 839 px>
 
 * 0.0 probability means unlikely detection of species
 * 1.0 probability means likely detection of species
 
-From these probabilities, the user can specify thresholds (or use recommended ones) for true detections and 
-optionally output these detections or the detection audio slice.
+From these probabilities, the user can specify thresholds ([_or use recommended ones_](#detection-thresholds)) for true detections and 
+optionally output these detections and/or the audio clips of each thresholded detection.
 
 The configuration for the models is carefully tuned for optimal detection performance. It is helpful to
 understand some of these parameters to be able to interpret the outputs of the library:
@@ -289,7 +293,7 @@ was to process audio in a stream to avoid loading very large files in memory. Th
 that controls this in the `process` function of the detector called `chunk_size_minutes`.
 This allows the user to specify how many (whole) minutes of audio to load into memory at a time for processing.
 The output for all chunks is concatenated at the end of processing. Note that currently,
-the detector does not "look-ahead" across the chunk boundaries so there is a gap in detections at these boundaries
+the detector does not "look ahead" across the chunk boundaries so there is a gap in detections at these boundaries
 the size of the detection window.
 
 
@@ -306,8 +310,7 @@ This library also requires [ffmpeg](https://ffmpeg.org/) for file
 conversion - which implies it also handles many different types
 of audio file encodings - and for stream processing of large files.
 To install ffmpeg on Windows, see this the installation steps outline
- [here](https://github.com/nationalparkservice/ffaudIO) by a member of
- the National Park Service. For static builds on all platforms, see
+ [here](https://github.com/nationalparkservice/ffaudIO). For static builds on all platforms, see
  the [downloads](https://ffmpeg.org/download.html) on the ffmpeg site.
 
 
@@ -324,11 +327,11 @@ complete. Some common considerations for users that affect performance:
 * Background Noise
     * Rain or heavy overlap in species calls
 * Audio Encoding
-    * The training audio is 44.1kHz sampling rate and 60 or 90kbps mp3 encoding.
-     Using a similar or better encoding is advised. To illustrate, below a plot of the
+    * **The training audio is 44.1kHz sampling rate and 60 or 90kbps mp3 encoding.
+     Using a similar or better encoding is advised.** To illustrate, below a plot of the
      probabilities for the test file in the code example above. The wav series is the original 90kbps
-     decoded to wav and the 320k and 60k series are the wav re-encoded to mp3. The higher quality 320k
-     matches much closer the original signal than the 60k.
+     decoded to wav and the 320kbps and 60kbps series are the wav re-encoded to mp3. The higher quality 320kbps
+     matches much closer the original signal than the 60kbps.
 
 ![alt text](./static/Encoding_Interference_Example.png "Encoding Interference")
 
