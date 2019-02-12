@@ -28,12 +28,14 @@ Since 2001 researchers at Denali National Park have collected extensive audio re
 in an initiative to protect and study the natural acoustic environment. Recordings often contain sounds which can used to better understand avian occupancy, abundance, phenological timing, or other quantities of interest to conservation efforts. The identification and annotation of avian species over thousands of hours of audio would require an enormous amount of time from skilled technical staff. Recent advances in artificial intelligence technology have drastically improved the ability of machines to perceive audio signals at human levels. This library uses machine listening models pre-trained on Denali audio to help automatically identify a variety of
 avian species, speeding the analysis several fold.
 
+---
 
 ### Author
 
 This library and the associated listening models were created by [Cameron Summers](mailto:cameron@lightenai.com),
 who is a researcher in machine learning and artificial intelligence located in the San Francisco Bay Area.
 
+---
 
 ### Usage
 
@@ -219,7 +221,7 @@ seconds of the file. Let's take a look at the plot:
 ![alt text](./static/SWTH_Test_Detection.png "prob plot")
 
 There is a lot going on in the audio and you can see the probabilities changing as
-the model perceives what it thinks are Swainson's Thrush songs. The probabilities collapse
+the model responds to what are presumably Swainson's Thrush songs. The probabilities collapse
 the last 4 seconds of the file because the window size is a minimum 4 seconds for detection.
 
 From here, there are some convenience functions for common outputs. One is to
@@ -296,6 +298,7 @@ The output for all chunks is concatenated at the end of processing. Note that cu
 the detector does not "look ahead" across the chunk boundaries so there is a gap in detections at these boundaries
 the size of the detection window.
 
+---
 
 ## Installation
 
@@ -313,6 +316,7 @@ To install ffmpeg on Windows, see this the installation steps outline
  [here](https://github.com/nationalparkservice/ffaudIO). For static builds on all platforms, see
  the [downloads](https://ffmpeg.org/download.html) on the ffmpeg site.
 
+---
 
 ## Model Training
 
@@ -335,6 +339,7 @@ complete. Some common considerations for users that affect performance:
 
 ![alt text](./static/Encoding_Interference_Example.png "Encoding Interference")
 
+---
 
 ## Smoke Tests
 
@@ -344,6 +349,7 @@ To run some basic tests, use [nose](https://nose.readthedocs.io/en/latest/):
 
 This should generate no errors.
 
+---
 
 ## Troubleshooting
 
@@ -352,6 +358,7 @@ This should generate no errors.
 Installing Keras with Pip creates a configuration file in your home directory ~/.keras/keras.json with
 the compute backend as Tensorflow. You may need to change this to Theano: `"backend": "theano"`
 
+---
 
 ## Dependencies
 
@@ -365,6 +372,7 @@ the compute backend as Tensorflow. You may need to change this to Theano: `"back
 
 * [ffmpeg](https://ffmpeg.org/)
 
+---
 
 ## Public domain
 
