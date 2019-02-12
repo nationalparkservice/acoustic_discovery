@@ -54,10 +54,10 @@ understand some of these parameters to be able to interpret the outputs of the l
 * window_size_sec - Size of the detection window
 * hop_size - Separation between consecutive overlapping detection windows
 
-For the models in the initial release of this library, the window size is 4.0 seconds and the hop size is 0.01 seconds.
-So for a 30 second long file, there should be 3000 detections. The first detection window goes from 0.0 seconds
-in the audio to 4.0 seconds, the second window from 0.01 seconds to 4.01 seconds, and so on.
+For the models in this library, the window size is 4.0 seconds and the hop size is 0.01 seconds. Thus for a 30 second long file, there should be 3000 detections. The first detection window goes from 0.0 seconds in the audio to 4.0 seconds, the second window from 0.01 seconds to 4.01 seconds, and so on.
 
+
+<img src="https://github.com/nationalparkservice/acoustic_discovery/blob/master/static/Acoustic%20Discovery%20rolling%20window%20diagram.png" alt="diagram of rolling window schema" width = 800 px>
 
 ##### Models
 
