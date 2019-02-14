@@ -319,8 +319,6 @@ class AcousticDetector(object):
 
                     proc = subprocess.Popen(decode_command, stdout=subprocess.PIPE)
 
-                    model_probs_map = defaultdict(list)
-
                     raw_data = proc.stdout.read()
                     signal = raw_ffmpeg_data_to_ndarray(raw_data)
 
@@ -336,12 +334,14 @@ class AcousticDetector(object):
                         raise ValueError('Signal length 0 for sample {} on day {}. Double check your sampling scheme.'
                                          .format(sample_idx + 1, day_idx + 1))
 
+                    model_probs_map = dict()
+
                     # Create feature vector and run through models
                     X_win = self.get_feature_vector(signal, MODEL_SAMPLE_RATE)
                     for model_id, model in self.models.items():
                         feat = np.copy(X_win)
                         prob = model.process(feat)
-                        model_probs_map[model].append(prob)
+                        model_probs_map[model] = prob
 
                     samples_probs.append(model_probs_map)
 
