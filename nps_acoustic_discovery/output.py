@@ -98,19 +98,32 @@ def probs_to_raven_detections(model_prob_df_map, filter_probs=True):
     return model_raven_df_map
 
 
-def save_detections_to_audio(model_prob_df_map, audio_path, audio_basename, audio_ext, save_dir, ffmpeg_path):
-    # Save detections at given threshold as individual corresponding audio files
+def save_detections_to_audio(model_prob_df_map, audio_path, save_dir, ffmpeg_path, ignore_warning=False):
+    """
+    Create separate audio files for each model and each detection for auditioning results.
+
+    Args:
+        model_prob_df_map (dict): map of EventModel objects to dataframes of probabilities
+        audio_path (str): path to audio used to process model_prob_df_map, used to name saved files
+        save_dir (str): directory in which to save audio files
+        ffmpeg_path (str): path to ffmpeg
+        ignore_warning (bool): bypass warning for creating audio files
+    """
+    audio_filename = os.path.basename(audio_path)
+    audio_basename, audio_ext = os.path.splitext(audio_filename)
 
     model_raven_df_map = probs_to_raven_detections(model_prob_df_map)
 
     for model, raven_df in model_raven_df_map.items():
-        create_audio = input(
-            'About to create {} audio files for {} detections. Are you sure? (y/N)'.format(len(raven_df),
+
+        if not ignore_warning:
+            create_audio = input(
+                'About to create {} audio files for {} detections. Are you sure? (y/N)'.format(len(raven_df),
                                                                                            model.event_code))
 
-        if create_audio not in ['y', 'Y']:
-            logging.info('Process aborted by user.')
-            continue
+            if create_audio not in ['y', 'Y']:
+                logging.info('Process aborted by user.')
+                continue
 
         for idx, row in raven_df.iterrows():
             start_time = row['Begin Time (s)']
@@ -133,9 +146,17 @@ def save_detections_to_audio(model_prob_df_map, audio_path, audio_basename, audi
             subprocess.Popen(ffmpeg_slice_cmd)
 
 
-def save_detections_to_raven(model_prob_df_map, audio_basename, save_dir):
+def save_detections_to_raven(model_prob_df_map, audio_path, save_dir):
+    """
+    Save detections to a csv file readable by Raven.
 
-    # Save detections at given threshold to Raven file
+    Args:
+        model_prob_df_map (dict): map of EventModel objects to dataframes of probabilities
+        audio_path (str): path to audio used to process model_prob_df_map, used to name saved files
+        save_dir (str): directory in which to save audio files
+    """
+    audio_filename = os.path.basename(audio_path)
+    audio_basename, audio_ext = os.path.splitext(audio_filename)
 
     model_raven_df_map = probs_to_raven_detections(model_prob_df_map)
     for model, raven_df in model_raven_df_map.items():
@@ -157,8 +178,17 @@ def save_detections_to_raven(model_prob_df_map, audio_basename, save_dir):
             )
 
 
-def save_probs_to_csv(model_prob_df_map, audio_basename, save_dir):
-    # Save raw probabilities to tsv file
+def save_probs_to_csv(model_prob_df_map, audio_path, save_dir):
+    """
+    Save probabilities to a csv file.
+
+    Args:
+        model_prob_df_map (dict): map of EventModel objects to dataframes of probabilities
+        audio_path (str): path to audio used to process model_prob_df_map, used to name saved files
+        save_dir (str): directory in which to save audio files
+    """
+    audio_filename = os.path.basename(audio_path)
+    audio_basename, audio_ext = os.path.splitext(audio_filename)
 
     for model, df in model_prob_df_map.items():
         df.to_csv(os.path.join(save_dir, '{}_{}_{}_probs_df.tsv'.format(os.path.basename(audio_basename),
