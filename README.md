@@ -68,16 +68,29 @@ When running a detector, you will likely use these recommended thresholds:
  
 Species | Code | Recommended Threshold
 --- | --- | ---
-American Robin | AMRO | 0.6
-Blackpoll Warbler | BLPW | 0.2
-Fox Sparrow | FOSP | 0.7
-White-crowned Sparrow | WCSP | 0.99
-Common Raven | CORA | 0.1
-Dark-eyed Junco | DEJU | 0.2
-Greater Yellowlegs | GRYE | 0.3
-Hermit Thrush | HETH | 0.1
-Swainson’s Thrush | SWTH | 0.6
-White-tailed Ptarmigan | WTPT | 0.9
+Willow Ptarmigan | WIPT | 0.2
+White-tailed Ptarmigan* | WTPT | 0.9
+Greater Yellowlegs* | GRYE | 0.3
+Surfbird | SURF | 0.1
+Wilson's Snipe* | WISN | 0.6
+Olive-sided Flycatcher | OSFL | 0.1
+Common Raven* | CORA | 0.1
+Ruby-crowned Kinglet | RCKI | 0.4
+Swainson’s Thrush* | SWTH | 0.6
+Hermit Thrush* | HETH | 0.1
+American Robin* | AMRO | 0.6
+Varied Thrush | VATH | 0.3
+Orange-crowned Warbler* | OCWA | 0.99
+Blackpoll Warbler* | BLPW | 0.2
+Myrtle Warbler | MYWA | 0.5
+Fox Sparrow* | FOSP | 0.7
+Lincoln's Sparrow | LISP | 0.7
+White-crowned Sparrow* | WCSP | 0.99
+Golden-crowned Sparrow* | GCSP | 0.9
+Dark-eyed Junco* | DEJU | 0.2
+
+(Higher performance is expected for species marked with an asterisk.)
+
 
 
 Using your own thresholds:
