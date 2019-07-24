@@ -61,9 +61,6 @@ Each species has an already-trained model in a folder and they are stored in the
 of this project. The user provides a path to one of these to use
 it for detections.
 
-
-##### Detection Thresholds
-
 When running a detector, you will likely use these recommended thresholds:
  
 Species | Code | Recommended Threshold
@@ -91,7 +88,37 @@ Dark-eyed Junco* | DEJU | 0.2
 
 (Higher performance is expected for species marked with an asterisk.)
 
+Models have one of two separate configuration types to improve performance. Importantly, **species from different groups cannot be run together in the same instance of the `AcousticDetector` class!** The two groups are as follows:
 
+Group 1:
+>FOSP, WCSP, CORA, HETH, WTPT, GRYE, AMRO, DEJU, BLPW, SWTH
+
+>{'axis_dim': 1,
+ 'feature_dim': 42,
+ 'high_freq': 12000.0,
+ 'hop_size': 0.01,
+ 'low_freq': 100.0,
+ 'nfft': 1024,
+ 'num_cepstral_coeffs': 14,
+ 'num_filters': 512,
+ 'window_size_sec': 4.0}
+
+
+Group 2:
+>OSFL, RCKI, LISP, GCSP, VATH, MYWA, WISN, SURF, OCWA, WIPT
+
+> {'axis_dim': 1,
+ 'feature_dim': 64,
+ 'high_freq': 5000.0,
+ 'hop_size': 0.01,
+ 'low_freq': 500.0,
+ 'nfft': 512,
+ 'num_cepstral_coeffs': None,
+ 'num_filters': 64,
+ 'window_size_sec': 4.0}
+
+
+---
 
 Using your own thresholds:
 
