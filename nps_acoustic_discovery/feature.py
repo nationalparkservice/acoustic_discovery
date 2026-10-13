@@ -36,8 +36,8 @@ class FeatureExtractor(object):
         mfcc_delta = np.zeros(shape=mfcc_feat.shape)
         for t in range(mfcc_feat.shape[0]):
             try:
-                numer = np.sum([n * (mfcc_feat[t + n, :] - mfcc_feat[t - n, :]) for n in range(1, N + 1)])
-                denom = 2 * np.sum([n ** 2 for n in range(N)])
+                numer = np.sum([n * (mfcc_feat[t + n, :] - mfcc_feat[t - n, :]) for n in range(1, N + 1)], axis=0)
+                denom = 2 * np.sum([n ** 2 for n in range(1, N + 1)])
                 mfcc_delta[t, :] = np.divide(numer, denom)
             except IndexError:
                 mfcc_delta[t, :] = mfcc_feat[t, :]
@@ -46,8 +46,8 @@ class FeatureExtractor(object):
         mfcc_delta_delta = np.zeros(shape=mfcc_delta.shape)
         for t in range(mfcc_delta.shape[0]):
             try:
-                numer = np.sum([n * (mfcc_delta[t + n, :] - mfcc_delta[t - n, :]) for n in range(1, N + 1)])
-                denom = 2 * np.sum([n ** 2 for n in range(N)])
+                numer = np.sum([n * (mfcc_delta[t + n, :] - mfcc_delta[t - n, :]) for n in range(1, N + 1)], axis=0)
+                denom = 2 * np.sum([n ** 2 for n in range(1, N + 1)])
                 mfcc_delta_delta[t, :] = np.divide(numer, denom)
             except IndexError:
                 mfcc_delta_delta[t, :] = mfcc_delta[t, :]
